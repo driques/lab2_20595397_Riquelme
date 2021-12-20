@@ -1,0 +1,93 @@
+%TDA Fecha
+%Representacion fecha(integer, integer, integer, TDA Fecha).
+%Funcion constructora de fecha
+%Dom: int x int x int x TDA Fecha
+fecha(Dia, Mes, Anio, FechaNueva):-
+    integer(Dia), Dia > 0, Dia =< 31,
+    integer(Mes), Mes > 0, Mes =< 12,
+    integer(Anio), Anio > 0,
+    FechaNueva = [Dia, Mes, Anio].
+
+
+%Pertenencia
+%Funcion verifica tipo de dato fecha
+%Dom: int x int x int 
+isFecha([Dia, Mes, Anio]):-
+    integer(Dia),
+    integer(Mes),
+    integer(Anio).
+
+%Selectores
+%Permite obtener un dato de Fecha, misma def para los 3.
+%Dom: int x int x int
+getDia([Dia, Mes, Anio], ObtenDia):-
+    fecha?([Dia, Mes, Anio]),
+    ObtenDia = Dia.
+getDia([Dia,Mes,Anio],ObtenDia):-
+    fecha?([Dia, Mes, Anio]),
+    ObtenDia = Mes.
+getDia([Dia, Mes, Anio], ObtenDia):-
+    fecha?([Dia, Mes, Anio]),
+    ObtenDia = Anio.
+
+
+%--------------------------------------------------------------------------
+%TDA Usuario
+%newUser(Username X Password X Fecha X IsActive X Users)
+%Representacion newUser (string X string X fecha X bool X users)
+
+%Constructor
+%Crea un usuario nuevo, verifica sus datos y lo agrega a la lista de usuarios
+%Dom: string X string X fecha X bool X users
+newUser(Username, Password, Fecha, IsActive, Users):-
+    string(Username),
+    string(Password),
+    fecha?(Fecha),
+    integer(IsActive),
+    Users = [Username,Password,Fecha,IsActive].
+
+%Pertenencia
+%Verifica que la lista ingresada sea del tipo usuario.
+%Dom: list
+isUser([Username,Password,Fecha,Active]):-
+     string(Username),
+    string(Password),
+    isFecha(Fecha),
+    integer(Active).
+
+%Selectores
+%Obtiene los datos de la lista usuario ingresada
+%Dom: list X dato
+getUsername([Username,Password,Fecha,Active],ObtenUser):-
+    usuario?([Username,Password,Fecha,Active]),
+    ObtenUser = Username.
+getPassword([Username,Password,Fecha,Active],ObtenPass):-
+    usuario?([Username,Password,Fecha,Active]),
+    ObtenPass = Password.
+getFecha([Username,Password,Fecha,Active],ObtenFecha):-
+    usuario?([Username,Password,Fecha,Active]),
+    ObtenFecha = Fecha.
+getActive([Username,Password,Fecha,Active],ObtenActive):-
+    usuario?([Username,Password,Fecha,Active]),
+    ObtenActive = Active.
+
+%Modificadores
+%Deja a un usuario activo
+%Dom: list X ModUser
+online([Username,Password,Fecha,Active],ActUser):-
+    usuario?([Username,Password,Fecha,Active]),
+    getUsername([Username,Password,Fecha,Active],OfflineUser),
+    getUserPassword([Username,Password,Fecha,Active],Pass),
+    getFecha([Username,Password,Fecha,Active],FechaCreate),
+    ActUser = [OfflineUser,Pass,FechaCreate,1].
+
+
+
+%Deja a un usuario inactivo
+%Dom: list X ModUser
+offline([Username,Password,Fecha,Active],OffUser):-
+    usuario?([Username,Password,Fecha,Active]),
+    getUsername([Username,Password,Fecha,Active],OfflineUser),
+    getUserPassword([Username,Password,Fecha,Active],Pass),
+    getFecha([Username,Password,Fecha,Active],FechaCreate),
+    OffUser = [OfflineUser,Pass,FechaCreate,0].
