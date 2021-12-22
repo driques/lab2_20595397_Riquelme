@@ -91,3 +91,42 @@ offline([Username,Password,Fecha,Active],OffUser):-
     getUserPassword([Username,Password,Fecha,Active],Pass),
     getFecha([Username,Password,Fecha,Active],FechaCreate),
     OffUser = [OfflineUser,Pass,FechaCreate,0].
+
+%TDA ParadigmaDocs
+%Name: nombre de la plataforma
+%Date: Fecha de creación plataforma
+%SOut: TDA resultante
+/*
+Representación
+string X list X list x list
+[Name,Date, Registrados,Documentos]
+
+*/
+
+paradigmaDocs(Name,Date,SOut):-
+    string(Name), 
+    isFecha(Date), 
+    SOut = [Name,Date,[],[]].
+%Pertenencia, permite verificar si el dato ingresado es del tipo paradigmaDocs
+%Dom: list 
+isParadigmaDocs([NameP,DateP,[],[]]):-
+    string(NameP),
+    isFecha(DateP).
+%Selectores
+%Obtiene datos especificos del paradigmaDocs
+%nombre plataforma
+getPlataformName([NameP,DateP,_,_],Pname):-
+    isParadigmaDocs([NameP,DateP,_,_]),
+    Pname = NameP.
+%fecha creación plataforma
+getPlataformDate([NameP,DateP,_,_],Pdate):-
+    isParadigmaDocs([NameP,DateP,_,_]),
+    Pdate = DateP.
+%Obtiene los usuarios registrados
+getPlataformUsers([NameP,DateP,UsersP,_],Pusers):-
+    isParadigmaDocs([NameP,DateP,_,_]),
+    Pusers = UsersP.
+%Obtiene los documentos
+getPlataformDocs([NameP,DateP,_,DocsP],Pdocs):-
+    isParadigmaDocs([NameP,DateP,_,_]),
+    Pdocs = DocsP.
