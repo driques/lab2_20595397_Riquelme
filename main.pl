@@ -1,8 +1,16 @@
-%test
-%TDA Fecha
-%Representacion fecha(integer, integer, integer, TDA Fecha).
-%Funcion constructora de fecha
-%Dom: int x int x int x TDA Fecha
+
+%---------------------------------------------------------
+%Domains
+%Dia: integer
+%Mes: integer
+%Anio: integer
+%FechaNueva: fecha
+%Predicates
+%fecha(Dia, Mes, Anio, FechaNueva).
+%Goals
+%Generar una fecha valida
+%clauses
+%Regla
 fecha(Dia, Mes, Anio, FechaNueva):-
     integer(Dia), Dia > 0, Dia =< 31,
     integer(Mes), Mes > 0, Mes =< 12,
@@ -10,89 +18,127 @@ fecha(Dia, Mes, Anio, FechaNueva):-
     FechaNueva = [Dia, Mes, Anio].
 
 
-%Pertenencia
-%Funcion verifica tipo de dato fecha
-%Dom: int x int x int 
+%Domains
+%Dia: integer
+%Mes: integer
+%Anio: integer
+%Predicates
+%isFecha(Dia, Mes, Anio).
+%Goals
+%Verificar una fecha valida
+%clauses
+%Regla
 isFecha([Dia, Mes, Anio]):-
     integer(Dia),
     integer(Mes),
     integer(Anio).
 
 %Selectores
-%Permite obtener un dato de Fecha, misma def para los 3.
-%Dom: int x int x int
+%Domains
+%list: [Dia,Mes,Anio]
+%ObtenElemntoAObtener: integer.
+%Predicates
+%getElemntoObtener([Dia, Mes, Anio], ObtenElemntoAObtener).
+%Goals
+%Selectores para dia, mes o año.
+%clauses
+%Regla
 getDia([Dia, Mes, Anio], ObtenDia):-
     isFecha([Dia, Mes, Anio]),
     ObtenDia = Dia.
-getDia([Dia,Mes,Anio],ObtenDia):-
+getMes([Dia,Mes,Anio],ObtenMes):-
     isFecha([Dia, Mes, Anio]),
-    ObtenDia = Mes.
-getDia([Dia, Mes, Anio], ObtenDia):-
+    ObtenMes = Mes.
+getAnio([Dia, Mes, Anio], ObtenAnio):-
     isFecha([Dia, Mes, Anio]),
-    ObtenDia = Anio.
+    ObtenAnio = Anio.
 
 
 %--------------------------------------------------------------------------
 %TDA Usuario
 %newUser(Username X Password X Fecha X IsActive X Users)
 %Representacion newUser (string X string X fecha X integer X users)
-%0 es activo, 1 es activo.
+
 %Constructor
+
+%Domains
+%Username:string
+%Password: string
+%Fecha: fecha
+%Users: list
+%Predicates
+%newUser(Username, Password, Fecha, Users)
+%Goals
 %Crea un usuario nuevo, verifica sus datos y lo agrega a la lista de usuarios
-%Dom: string X string X fecha X bool X users
+%clauses
+%Regla
+
 newUser(Username, Password, Fecha, Users):-
     string(Username),
     string(Password),
     isFecha(Fecha),
-    Users = [Username,Password,Fecha,0].
+    Users = [Username,Password,Fecha].
 
 %Pertenencia
+
+%Domains
+%ListUser:list
+%Predicates
+%isUser([Username,Password,Fecha])
+%Goals
 %Verifica que la lista ingresada sea del tipo usuario.
-%Dom: list
-isUser([Username,Password,Fecha,Active]):-
+%clauses
+%Regla
+isUser([Username,Password,Fecha]):-
      string(Username),
     string(Password),
-    isFecha(Fecha),
-    integer(Active).
+    isFecha(Fecha).
 
 %Selectores
-%Obtiene los datos de la lista usuario ingresada
-%Dom: list X dato
-getUsername([Username,Password,Fecha,Active],ObtenUser):-
-    isUser([Username,Password,Fecha,Active]),
+
+%Domains
+%ListUser:list
+%ObtenUser: string o fecha
+%Predicates
+%getUsername([Username,Password,Fecha],ObtenUser)
+%Goals
+%Selectores obtienen los datos de la lista usuario ingresada
+%clauses
+%Regla
+getUsername([Username,Password,Fecha],ObtenUser):-
+    isUser([Username,Password,Fecha]),
     ObtenUser = Username.
-getPassword([Username,Password,Fecha,Active],ObtenPass):-
-    isUser([Username,Password,Fecha,Active]),
+getPassword([Username,Password,Fecha],ObtenPass):-
+    isUser([Username,Password,Fecha]),
     ObtenPass = Password.
-getFecha([Username,Password,Fecha,Active],ObtenFecha):-
-    isUser([Username,Password,Fecha,Active]),
+getFecha([Username,Password,Fecha],ObtenFecha):-
+    isUser([Username,Password,Fecha]),
     ObtenFecha = Fecha.
-getActive([Username,Password,Fecha,Active],ObtenActive):-
-    isUser([Username,Password,Fecha,Active]),
-    ObtenActive = Active.
 
 %Modificadores
-%Deja a un usuario activo
-%Dom: list X ModUser
-online([Username,Password,Fecha,Active],ActUser):-
-    isUser([Username,Password,Fecha,Active]),
-    getUsername([Username,Password,Fecha,Active],OfflineUser),
-    getUserPassword([Username,Password,Fecha,Active],Pass),
-    getFecha([Username,Password,Fecha,Active],FechaCreate),
-    ActUser = [OfflineUser,Pass,FechaCreate,1].
+%Domains
+%Sn1: ParadigmaDocs
+%User: string
+%Sn2: ParadigmaDocs
+%Predicates
+%insertActiveUser(Sn1,User,Sn2)
+%Goals
+%Agregar un usuario a la lista del user activo.
+%clauses
+%Regla
+insertActiveUser(Sn1,User,Sn2):-
+    getPlataformName(Sn1,Pname),
+    getPlataformDate(Sn1,Pdate),
+    getPlataformUsers(Sn1,Pusers),
+    getPlataformDocs(Sn1,Pdocs),
+    Sn2 = [Pname,Pdate,Pusers,Pdocs,[User]].
 
 
 
-%Deja a un usuario inactivo
-%Dom: list X ModUser
-offline([Username,Password,Fecha,Active],OffUser):-
-    isUser([Username,Password,Fecha,Active]),
-    getUsername([Username,Password,Fecha,Active],OfflineUser),
-    getUserPassword([Username,Password,Fecha,Active],Pass),
-    getFecha([Username,Password,Fecha,Active],FechaCreate),
-    OffUser = [OfflineUser,Pass,FechaCreate,0].
-addUser(ListaUser,UserToAdd,NewListUsers):-
-    append([UserToAdd],ListaUser,NewListUsers).
+
+
+
+%-------------------------------------
 
 %TDA ParadigmaDocs
 %Name: nombre de la plataforma
@@ -101,61 +147,122 @@ addUser(ListaUser,UserToAdd,NewListUsers):-
 /*
 Representación
 string X list X list x list
-[Name,Date, Registrados,Documentos]
+[Name,Date,Registrados,Documentos,Online]
 
 */
-
+%Domains
+%Name: string
+%Date: Fecha
+%SOut: ParadigmaDocs
+%Predicates
+%paradigmaDocs(Name,Date,SOut)
+%Goals
+%Crear una plataforma del tipo paradigmaDocs.
+%clauses
+%Regla
 paradigmaDocs(Name,Date,SOut):-
     string(Name), 
     isFecha(Date), 
-    SOut = [Name,Date,[],[]].
+    SOut = [Name,Date,[],[],[]].
+
+
+%Domains
+%listParadigmaDocs: ParadigmaDocs
+%Predicates
+%isParadigmaDocs([NameP,DateP,[],[],[]])
+%Goals
 %Pertenencia, permite verificar si el dato ingresado es del tipo paradigmaDocs
-%Dom: list 
-isParadigmaDocs([NameP,DateP,[],[]]):-
+%clauses
+%Regla 
+isParadigmaDocs([NameP,DateP,[],[],[]]):-
     string(NameP),
     isFecha(DateP).
-%Selectores
-%Obtiene datos especificos del paradigmaDocs
+
+
+%Domains
+%listParadigmaDocs: ParadigmaDocs
+%PdatoConseguir: depende del dato a conseguir,
+%Predicates
+%getPlataformData([NameP,DateP,[],[],[]],Pdata).
+%Goals
+%Selectores, obtiene datos especificos del paradigmaDocs
+%clauses
+%Regla 
+
+
 %nombre plataforma
-getPlataformName([NameP,DateP,_,_],Pname):-
-    isParadigmaDocs([NameP,DateP,_,_]),
+getPlataformName([NameP,DateP,_,_,_],Pname):-
+    isParadigmaDocs([NameP,DateP,_,_,_]),
     Pname = NameP.
 %fecha creación plataforma
-getPlataformDate([NameP,DateP,_,_],Pdate):-
-    isParadigmaDocs([NameP,DateP,_,_]),
+getPlataformDate([NameP,DateP,_,_,_],Pdate):-
+    isParadigmaDocs([NameP,DateP,_,_,_]),
     Pdate = DateP.
 %Obtiene los usuarios registrados
-getPlataformUsers([NameP,DateP,UsersP,_],Pusers):-
-    isParadigmaDocs([NameP,DateP,_,_]),
+getPlataformUsers([NameP,DateP,UsersP,_,_],Pusers):-
+    isParadigmaDocs([NameP,DateP,_,_,_]),
     Pusers = UsersP.
 %Obtiene los documentos
-getPlataformDocs([NameP,DateP,_,DocsP],Pdocs):-
-    isParadigmaDocs([NameP,DateP,_,_]),
+getPlataformDocs([NameP,DateP,_,DocsP,_],Pdocs):-
+    isParadigmaDocs([NameP,DateP,_,_,_]),
     Pdocs = DocsP.
+%Obtiene el usuario activo.
+getPlataformActiveUsr([NameP,DateP,_,_,ActiveP],PActive):-
+    isParadigmaDocs([NameP,DateP,_,_,_]),
+    PActive = ActiveP.
+
 
 
 %Creacion de predicados
 %---------Register----------------------------------------------
+
+%Domains
+%userList: list
+%Username: string
+%Predicates
+%searchUsername([_|Cdr], Username).
+%Goals
 %Predicado que busca usuario entre los registrados en paradigmaDocs
+%clauses
+%Regla 
+
 searchUsername([], _) :- fail, !.
 searchUsername([Car|_], Username) :-
-    isUser(Car), getUsername(Car, User), 
+    isUser(Car), 
+    getUsername(Car, User), 
     Username == User, !.
 searchUsername([_|Cdr], Username) :-
     searchUsername(Cdr, Username).
 
-%Objetivo: verifica que el usuario no exista.
-%Dominio: Pdocs, string
-%Recorrido: si el usuario existe retorna true, si no, false
+
+
+%Domains
+%Pdocs: ParadigmaDocs
+%Username: string
+%Predicates
+%existeUsuario(Pdocs, Username).
+%Goals
+%verifica que el usuario no exista.
+%clauses
+%Regla 
 
 existeUsuario(Pdocs, Username) :-
     isParadigmaDocs(Pdocs), 
     getUsername(Pdocs, Users), 
     searchUsername(Users, Username).
 
-%Objetivo: 
-%Dominio: Pdocs x fecha x string x string x Pdocs2
-%Recorrido: 
+%Domains
+%Sn1: ParadigmaDocs
+%Fecha: fecha
+%Username: string
+%Password: string
+%Sn2: ParadigmaDocs
+%Predicates
+%paradigmaDocsRegister(Sn1, Fecha, Username, Password, Sn2) .
+%Goals
+%Registra un usuario en paradigmaDocs.
+%clauses
+%Regla 
 paradigmaDocsRegister(Sn1, Fecha, Username, Password, Sn2) :-
     %------------------Verificadores 
     isParadigmaDocs(Sn1), 
@@ -169,47 +276,79 @@ paradigmaDocsRegister(Sn1, Fecha, Username, Password, Sn2) :-
     append([NewUser], PaUsers, NuevosUsuarios), 
     getPlataformName(Sn1, PlataformName),
     getPlataformDocs(Sn1,PlataformDocs), 
-    getDateSN(Sn1, DatePlataform),
-    Sn2 = [PlataformName, DatePlataform, NuevosUsuarios,PlataformDocs].
+    getPlataformDate(Sn1, DatePlataform),
+    getPlataformActiveUsr(Sn1,ActiveUsrPlataform),
+    Sn2 = [PlataformName, DatePlataform, NuevosUsuarios,PlataformDocs,ActiveUsrPlataform].
 
 
 
 %----------------------------------------------------------
 %-----------------Login------------------------------------
 
+%Domains
+%regisersUsers: list
+%Username: string
+%Password: string
+%Predicates
+%isRegister([Cabeza|_], Username, Password).
+%Goals
+% verifica si el usuario esta registrado.
+%clauses
+%Regla 
 
-paradigmaDocsLogin(Sn1,User,Password,sn2):-
-    getPlataformUsers(Sn1,PlataformUsersList),
-/*Me falta verificar que el usuario no esté loggeado, que exista,
-que la contrasenia sea correcta */    
+isRegister([Cabeza|_], Username, Password) :-
+    getUsername(Cabeza, User), 
+    getPassword(Cabeza, Pass),
+    User=Username,
+    Pass=Password,!.
+
+isRegister([_|Cola], Username, Password) :-
+    isRegister(Cola, Username, Password).
+
+%Domains
+%Sn1: ParadigmaDocs
+%Predicates
+%notLogin(Sn1).
+%Goals
+% verifica que la lista de online esté vacia.
+%clauses
+%Regla 
+
+notLogin(Sn1):-
+    getPlataformActiveUsr(Sn1,Active),
+    [] = Active.
+
+
+%Domains
+%Sn1: ParadigmaDocs
+%User: string
+%Password: string
+%Sn2: ParadigmaDocs
+%Predicates
+%paradigmaDocsLogin(Sn1,User,Password,Sn2).
+%Goals
+% Inicia sesion en paradigmaDocs.
+%clauses
+%Regla 
+paradigmaDocsLogin(Sn1,User,Password,Sn2):-
+    isParadigmaDocs(Sn1), 
+    getPlataformUsers(Sn1,RegUsers),
+    isRegister(RegUsers,User,Password),
+    notLogin(Sn1),
+    insertActiveUser(Sn1,User,Sn2).
 
 
 
+/*
+
+EJEMPLOS
 
 
+Registro de "driques".
+-fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister).
+Login de "driques", se logea con exito.
+-fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister),paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2).
+Login errado.
+-fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister),paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsLogin(Sn2,"driques","1234",Sn3).
 
-%******* Login (predicados a usar)
-
-
-
-%Objetivo: obtiene un usuario en específico de las listas de usuarios de socialnetwork
-%Dominio: string, list, variable vacía
-%Recorrido: si esta, retorna el usuario consultado, si no, retorna false
-obtenerUsuario(Username, [Cabeza|_], Resultado) :-
-    getUsername(Cabeza, User), Username = User, Resultado = Cabeza, !.
-obtenerUsuario(Username, [_|Cola], Resultado) :-
-    obtenerUsuario(Username, Cola, Resultado).
-
-%Objetivo: verifica si el usuario esta registrado en la socialnetwork
-%Dominio: list, string, string
-%Recorrido: true o false
-estaUsuarioRegistrado([Cabeza|_], Username, Password) :-
-    getUsername(Cabeza, User), getUserPassword(Cabeza, Pass), Username = User, Password = Pass, !.
-estaUsuarioRegistrado([_|Cola], Username, Password) :-
-    estaUsuarioRegistrado(Cola, Username, Password).
-
-%Objetivo: verificar si hay un usuario con sesión activa
-%Dominio: list
-%Recorrido: booleano (true o false)
-estaUsuarioSesionActiva([Listado_Usuarios | _]) :-
-    getUserSesion(Listado_Usuarios, User_Sesion), User_Sesion = "ACTIVA".
+*/
