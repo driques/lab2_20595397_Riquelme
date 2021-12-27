@@ -19,7 +19,8 @@ Codigo en proceso
 
 * [SWI-Prolog](https://www.swi-prolog.org/download/stable) - Enviroment.
 * [GitHub](https://github.com/) - Controlador de versiones.
-
+* [GitKraken](https://www.gitkraken.com/) - GUI Client.
+* [Sublime-Text](https://www.sublimetext.com/) - Source code editor.
 ## Autor ✒️
 * **Diego Riquelme** - *Código y documentación* - [driques](#driques)
 
