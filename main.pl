@@ -1,5 +1,6 @@
 
 %---------------------------------------------------------
+%TDA Fecha
 %Domains
 %Dia: integer
 %Mes: integer
@@ -174,7 +175,7 @@ paradigmaDocs(Name,Date,SOut):-
 %Pertenencia, permite verificar si el dato ingresado es del tipo paradigmaDocs
 %clauses
 %Regla 
-isParadigmaDocs([NameP,DateP,[],[],[]]):-
+isParadigmaDocs([NameP,DateP,_,_,_]):-
     string(NameP),
     isFecha(DateP).
 
@@ -212,6 +213,88 @@ getPlataformActiveUsr([NameP,DateP,_,_,ActiveP],PActive):-
     PActive = ActiveP.
 
 
+%-------------------------------------------------------
+%TDA Docs
+%Representacion
+%createDoc(fecha X string X string X string X doc)
+%Returns
+%[idDoc, idVer,Nombre,Contenido,propietario,shareList]
+%Constructor
+%Domains
+%Predicates
+%createDoc(Fecha,Nombre,Content,Owner,NewDoc)
+%Goals
+%Crea un nuevo documento.
+%clauses
+%Regla
+
+
+createDoc(IdDoc,Fecha,Nombre,Content,Owner,NewDoc):-
+    NewDoc = [IdDoc,1,Fecha,Nombre,Content,Owner,[]].
+
+
+%Domains
+%listDoc: doc
+%Predicates
+%isDoc([idDoc,idVer,Fecha,Nombre,Content,Owner,_]).
+%Goals
+%Pertenencia, permite verificar si el dato ingresado es del tipo Doc.
+%clauses
+%Regla 
+
+isDoc([IdDoc,IdVer,Fecha,Nombre,Content,[Owner|_],_]):-
+    integer(IdDoc),
+    integer(IdVer),
+    isFecha(Fecha),
+    string(Nombre),
+    string(Content),
+    string(Owner).
+
+%Domains
+%listDoc: doc
+%Predicates
+%isDoc([idDoc,idVer,Fecha,Nombre,Content,Owner,_]).
+%Goals
+%Pertenencia, permite verificar si el dato ingresado es del tipo Doc.
+%clauses
+%Regla 
+
+
+%Domains
+%list: doc
+%GetID: integer
+%Predicates
+%getIDdoc([listDoc],GetID]).
+%Goals
+% Obtener el id del ultimo doc creado.
+%clauses
+%Regla 
+
+getIDdoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner,_],GetID):-
+    isDoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner,_]),
+    GetID = IdDoc.
+
+
+%Domains
+%list: doc
+%GetterID: integer
+%Predicates
+%getNewID([listDoc],GetID]).
+%Goals
+% Genera un nuevo ID para la creación de un doc.
+%clauses
+%Regla
+
+getNewID([], GetterID) :- 
+    GetterID is 1.
+getNewID([Car|_], GetterID) :-
+    isDoc(Car), 
+    getIDdoc(Car, ID), 
+    GetterID is ID+1.
+
+
+
+%-------------------------------------------------------
 
 %Creacion de predicados
 %---------Register----------------------------------------------
@@ -337,6 +420,35 @@ paradigmaDocsLogin(Sn1,User,Password,Sn2):-
     notLogin(Sn1),
     insertActiveUser(Sn1,User,Sn2).
 
+%----------------------------------------------------------
+%-----------------Create------------------------------------
+%Domains
+%Sn1: ParadigmaDocs
+%Fecha: fecha
+%Nombre: string
+%Contenido: string
+%Sn2: ParadigmaDocs
+%Predicates
+%paradigmaDocsCreate(Sn1,Fecha,Nombre,Contenido,Sn2).
+%Goals
+% Crea un documento en Sn2 si es que se cumplen las clausulas necesarias.
+%clauses
+%Regla 
+paradigmaDocsCreate(Sn1,Fecha,Nombre,Contenido,Sn2):-
+    not(notLogin(Sn1)),
+    getPlataformActiveUsr(Sn1,ActiveUsr),
+    isFecha(Fecha),
+    string(Nombre),
+    string(Contenido),
+    getPlataformDocs(Sn1,Docs),
+    getNewID(Docs,IdDoc),
+    createDoc(IdDoc,Fecha,Nombre,Contenido,ActiveUsr,NewDoc),
+    append([NewDoc],[Docs],ListDocs),
+    getPlataformUsers(Sn1, PaUsers),
+    getPlataformName(Sn1, PlataformName),
+    getPlataformDate(Sn1, DatePlataform),
+    Sn2 = [PlataformName, DatePlataform, PaUsers,ListDocs,[]]. 
+
 
 
 /*
@@ -350,5 +462,6 @@ Login de "driques", se logea con exito.
 -fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister),paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2).
 Login errado.
 -fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister),paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsLogin(Sn2,"driques","1234",Sn3).
-
+Crea nuevo Doc.
+fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister),paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut).
 */
