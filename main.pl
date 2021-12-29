@@ -232,7 +232,7 @@ getPlataformActiveUsr([NameP,DateP,_,_,ActiveP],PActive):-
 createDoc(IdDoc,Fecha,Nombre,Content,Owner,NewDoc):-
     NewDoc = [IdDoc,1,Fecha,Nombre,Content,Owner,[]].
 
-
+%-----------------Pertenencia--------------
 %Domains
 %listDoc: doc
 %Predicates
@@ -250,16 +250,7 @@ isDoc([IdDoc,IdVer,Fecha,Nombre,Content,[Owner|_],_]):-
     string(Content),
     string(Owner).
 
-%Domains
-%listDoc: doc
-%Predicates
-%isDoc([idDoc,idVer,Fecha,Nombre,Content,Owner,_]).
-%Goals
-%Pertenencia, permite verificar si el dato ingresado es del tipo Doc.
-%clauses
-%Regla 
-
-
+%----------------Selectores----------------------
 %Domains
 %list: doc
 %GetID: integer
@@ -273,6 +264,44 @@ isDoc([IdDoc,IdVer,Fecha,Nombre,Content,[Owner|_],_]):-
 getIDdoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner,_],GetID):-
     isDoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner,_]),
     GetID = IdDoc.
+%Domains
+%list: doc
+%GetOwner: list
+%Predicates
+%getOwnerDoc([listDoc],GetOwner).
+%Goals
+% Obtener el dueño del doc entregado.
+%clauses
+%Regla 
+
+getOwnerDoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner,_],GetOwner):-
+    isDoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner,_]),
+    GetOwner = Owner.
+
+
+
+
+%Domains
+%list: docs
+%GetOwner: list
+%Id: integer
+%Predicates
+%getDocOwnerByID([listDoc],GetOwner,Id).
+%Goals
+% Obtener el dueño del doc entregando el id.
+%clauses
+%Regla 
+
+getDocOwnerByID([],_,_):- fail,!.
+getDocOwnerByID([Car|_],GetOwner,Id):-
+    isDoc(Car),
+    getIDdoc(Car,IdDoc),
+    IdDoc=Id,
+    getOwnerDoc(Car,GetOwner),!.
+getDocOwnerByID([_|Cdr],GetOwner,Id):-
+    getDocOwnerByID(Cdr,GetOwner,Id).
+
+
 
 
 %Domains
@@ -293,11 +322,52 @@ getNewID([Car|_], GetterID) :-
     GetterID is ID+1.
 
 
+%---------------Funciones extras-------------------------------
 
-%-------------------------------------------------------
 
-%Creacion de predicados
-%---------Register----------------------------------------------
+%ListaPermisos = ["W","R","C"] <- o variaciones
+%ListaUsernamesPermitidos = ["Pepito","Juan"]
+%Salida = [[IdDoc,userName,[Permisos]],[IdDoc,userName,[Permisos]]]
+
+%Domains
+%list: list
+%ListaPermisos: list
+%DocId: integer
+%Share: list
+%Predicates
+%otorgaPermisos([UserPermitido|_],ListaPermisos,DocId,Share)
+%Goals
+%Otorgar permisos a un conjunto de usuarios.
+%clauses
+%Regla 
+
+otorgaPermisos([],_,_,_):- !.
+
+otorgaPermisos([UserPermitido|_],ListaPermisos,DocId,Share):-
+    append([DocId],[UserPermitido],SiguienteList),
+    append(SiguienteList,[ListaPermisos],Share).
+
+
+otorgaPermisos([_|SiguientesUsers],ListaPermisos,DocId,Share):-
+    otorgaPermisos(SiguientesUsers,ListaPermisos,DocId,Share).
+
+
+%Domains
+%ListaUsernamesPermitidos: list
+%ListaPermisos: list
+%DocId: integer
+%Share: list
+%ReturnList: list
+%Predicates
+%creaListaShare(ListaUsernamesPermitidos,ListaPermisos,DocId,Share,ReturnList)
+%Goals
+%Encapsular la función otorgaPermisos para poder ejecutar findall y rellenar la lista
+%clauses
+%Regla 
+
+creaListaShare(ListaUsernamesPermitidos,ListaPermisos,DocId,Share,ReturnList):-
+    findall(Share,otorgaPermisos(ListaUsernamesPermitidos,ListaPermisos,DocId,Share),ReturnList).
+
 
 %Domains
 %userList: list
@@ -316,6 +386,32 @@ searchUsername([Car|_], Username) :-
     Username == User, !.
 searchUsername([_|Cdr], Username) :-
     searchUsername(Cdr, Username).
+
+
+%UsersRegister = [["manolo", "1234", [1, 2, 2021]], ["driques", "1234", [1, 2, 2021]]].
+%ListaUsernamesPermitidos = ["driques","juan"].
+%Domains
+%UsuariosRegistrados: list
+%ListaUsernamesPermitidos: list
+%Predicates
+%existenUsernames(UsuariosRegistrados,[User|Cdr])
+%Goals
+%Busca la existencia de un conjunto de usuarios entre un conjunto de registrados
+%clauses
+%Regla 
+existenUsernames(_,[]):-!.
+
+existenUsernames(UsuariosRegistrados,[User|Cdr]):-
+    searchUsername(UsuariosRegistrados,User),
+    existenUsernames(UsuariosRegistrados,Cdr).
+
+
+
+%-------------------------------------------------------
+
+%Creacion de predicados
+%---------Register----------------------------------------------
+
 
 
 
@@ -373,15 +469,15 @@ paradigmaDocsRegister(Sn1, Fecha, Username, Password, Sn2) :-
 %Username: string
 %Password: string
 %Predicates
-%isRegister([Cabeza|_], Username, Password).
+%isRegister([Car|_], Username, Password).
 %Goals
 % verifica si el usuario esta registrado.
 %clauses
 %Regla 
 
-isRegister([Cabeza|_], Username, Password) :-
-    getUsername(Cabeza, User), 
-    getPassword(Cabeza, Pass),
+isRegister([Car|_], Username, Password) :-
+    getUsername(Car, User), 
+    getPassword(Car, Pass),
     User=Username,
     Pass=Password,!.
 
@@ -443,12 +539,38 @@ paradigmaDocsCreate(Sn1,Fecha,Nombre,Contenido,Sn2):-
     getPlataformDocs(Sn1,Docs),
     getNewID(Docs,IdDoc),
     createDoc(IdDoc,Fecha,Nombre,Contenido,ActiveUsr,NewDoc),
-    append([NewDoc],[Docs],ListDocs),
+    append([NewDoc],Docs,ListDocs),
     getPlataformUsers(Sn1, PaUsers),
     getPlataformName(Sn1, PlataformName),
     getPlataformDate(Sn1, DatePlataform),
     Sn2 = [PlataformName, DatePlataform, PaUsers,ListDocs,[]]. 
+%----------------------------------------------------------
+%-----------------Share------------------------------------
+%Que haya una sesion iniciada
+%Que los usuarios a los cuales se comparten esten registrados
+%Verificar que sea el propietario
+%ListaPermisos = ["W","R","C"] <- o variaciones
+%ListaUsernamesPermitidos = ["Pepito","Juan"]
+%Salida = [[IdDoc,userName,[Permisos]],[IdDoc,userName,[Permisos]]]
+paradigmaDocsShare(Sn1, DocId,ListaPermisos,ListaUsernamesPermitidos,Sn2):-
+    getPlataformActiveUsr(Sn1,ActiveUsr),
+    getPlataformDocs(Sn1,Docs),
+    getDocOwnerByID(Docs,Owner,DocId),
+    ActiveUsr = Owner,
+    getPlataformUsers(Sn1, PaUsers),
+    existenUsernames(PaUsers,ListaUsernamesPermitidos),
+    creaListaShare(ListaUsernamesPermitidos,ListaPermisos,DocId,_,ListaShare),
+    %-------Ahora se arma Sn2
+    getPlataformDocs(Sn1,Pldocs),
+    getPlataformName(Sn1, PlataformName),
+    getPlataformDate(Sn1, DatePlataform),
+    Sn2 = [PlataformName, DatePlataform, PaUsers,Pldocs,ListaShare]. 
+    
+    
 
+
+
+%----------------------------------------------------------------------------
 
 
 /*
@@ -456,12 +578,47 @@ paradigmaDocsCreate(Sn1,Fecha,Nombre,Contenido,Sn2):-
 EJEMPLOS
 
 
-Registro de "driques".
--fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister).
-Login de "driques", se logea con exito.
--fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister),paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2).
-Login errado.
--fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister),paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsLogin(Sn2,"driques","1234",Sn3).
-Crea nuevo Doc.
-fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister),paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut).
+--------------------------------------------------Registro de "driques"-------------------------------------------------------------------------------------
+-> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister).
+----------------------------------------------Login de "driques", se logea con exito-----------------------------------------------------------------------------
+-> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister),paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2).
+-------------------------------------------------------Login errado------------------------------------------------------------------------------------------------
+-> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister),
+paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsLogin(Sn2,"driques","1234",Sn3).
+---------------------------------------------------Crea nuevo Doc----------------------------------------------------------------------------------------
+-> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),
+paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),
+paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),
+paradigmaDocsLogin(DocOut,"manolo","1234",Login2),paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut).
+--------------------------------------------------Comparte doc 1 Errado porque ni pepito ni juan existen----------------------------------------------------------------------------------------
+-> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
+paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
+paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
+paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsShare(Sn5,1,["W","R","C"],["Pepito","Juan"],Snfinal).
+--------------------------------------------------Comparte doc 1 Bueno----------------------------------------------------------------------------------------
+-> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
+paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
+paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
+paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsShare(Sn5,1,["W","R","C"],["manolo"],Snfinal).
 */
+
+
+
+
+
+
+
+
+%------------------------------Funciones y recordatorios personales--------------------------------------
+
+/*
+set_prolog_flag(answer_write_options,
+                   [ quoted(true),
+                     portray(true),
+                     spacing(next_argument)
+                   ]).*/
+
+%Objetivo: elimina un elemento de una lista
+myDeleteElemList(Dato, [Dato|Cdr], Cdr):- !.
+myDeleteElemList(Dato, [Car|Cdr], [Car|Resultado]) :-
+    myDeleteElemList(Dato, Cdr, Resultado).
