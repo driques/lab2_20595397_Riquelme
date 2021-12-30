@@ -132,7 +132,9 @@ insertActiveUser(Sn1,User,Sn2):-
     getPlataformDate(Sn1,Pdate),
     getPlataformUsers(Sn1,Pusers),
     getPlataformDocs(Sn1,Pdocs),
-    Sn2 = [Pname,Pdate,Pusers,Pdocs,[User]].
+    getPlataformDocsVer(Sn1,PDocsVersions),
+    getPlataformShare(Sn1,ShareList),
+    Sn2 = [Pname,Pdate,Pusers,Pdocs,[User],ShareList,PDocsVersions].
 
 
 
@@ -148,7 +150,7 @@ insertActiveUser(Sn1,User,Sn2):-
 /*
 Representación
 string X list X list x list
-[Name,Date,Registrados,Documentos,Online]
+[Name,Date,Registrados,Documentos,Online,Share,DocVersions]
 
 */
 %Domains
@@ -164,18 +166,18 @@ string X list X list x list
 paradigmaDocs(Name,Date,SOut):-
     string(Name), 
     isFecha(Date), 
-    SOut = [Name,Date,[],[],[]].
+    SOut = [Name,Date,[],[],[],[],[]].
 
 
 %Domains
 %listParadigmaDocs: ParadigmaDocs
 %Predicates
-%isParadigmaDocs([NameP,DateP,[],[],[]])
+%isParadigmaDocs([NameP,DateP,[],[],[],[]])
 %Goals
 %Pertenencia, permite verificar si el dato ingresado es del tipo paradigmaDocs
 %clauses
 %Regla 
-isParadigmaDocs([NameP,DateP,_,_,_]):-
+isParadigmaDocs([NameP,DateP,_,_,_,_,_]):-
     string(NameP),
     isFecha(DateP).
 
@@ -184,7 +186,7 @@ isParadigmaDocs([NameP,DateP,_,_,_]):-
 %listParadigmaDocs: ParadigmaDocs
 %PdatoConseguir: depende del dato a conseguir,
 %Predicates
-%getPlataformData([NameP,DateP,[],[],[]],Pdata).
+%getPlataformData([NameP,DateP,[],[],[],[],[]],Pdata).
 %Goals
 %Selectores, obtiene datos especificos del paradigmaDocs
 %clauses
@@ -192,25 +194,34 @@ isParadigmaDocs([NameP,DateP,_,_,_]):-
 
 
 %nombre plataforma
-getPlataformName([NameP,DateP,_,_,_],Pname):-
-    isParadigmaDocs([NameP,DateP,_,_,_]),
+getPlataformName([NameP,DateP,_,_,_,_,_],Pname):-
+    isParadigmaDocs([NameP,DateP,_,_,_,_,_]),
     Pname = NameP.
 %fecha creación plataforma
-getPlataformDate([NameP,DateP,_,_,_],Pdate):-
-    isParadigmaDocs([NameP,DateP,_,_,_]),
+getPlataformDate([NameP,DateP,_,_,_,_,_],Pdate):-
+    isParadigmaDocs([NameP,DateP,_,_,_,_,_]),
     Pdate = DateP.
 %Obtiene los usuarios registrados
-getPlataformUsers([NameP,DateP,UsersP,_,_],Pusers):-
-    isParadigmaDocs([NameP,DateP,_,_,_]),
+getPlataformUsers([NameP,DateP,UsersP,_,_,_,_],Pusers):-
+    isParadigmaDocs([NameP,DateP,_,_,_,_,_]),
     Pusers = UsersP.
 %Obtiene los documentos
-getPlataformDocs([NameP,DateP,_,DocsP,_],Pdocs):-
-    isParadigmaDocs([NameP,DateP,_,_,_]),
+getPlataformDocs([NameP,DateP,_,DocsP,_,_,_],Pdocs):-
+    isParadigmaDocs([NameP,DateP,_,_,_,_,_]),
     Pdocs = DocsP.
 %Obtiene el usuario activo.
-getPlataformActiveUsr([NameP,DateP,_,_,ActiveP],PActive):-
-    isParadigmaDocs([NameP,DateP,_,_,_]),
+getPlataformActiveUsr([NameP,DateP,_,_,ActiveP,_,_],PActive):-
+    isParadigmaDocs([NameP,DateP,_,_,_,_,_]),
     PActive = ActiveP.
+%Obtiene los documentos compartidos.
+getPlataformShare([NameP,DateP,_,_,_,ShareList,_],Pshare):-
+    isParadigmaDocs([NameP,DateP,_,_,_,_,_]),
+    Pshare = ShareList.  
+%Obtiene el historial de documentos.
+getPlataformDocsVer([NameP,DateP,_,_,_,_,DocsVersions],PDocsVersions):-
+    isParadigmaDocs([NameP,DateP,_,_,_,_,_]),
+    PDocsVersions = DocsVersions.
+
 
 
 %-------------------------------------------------------
@@ -218,7 +229,7 @@ getPlataformActiveUsr([NameP,DateP,_,_,ActiveP],PActive):-
 %Representacion
 %createDoc(fecha X string X string X string X doc)
 %Returns
-%[idDoc, idVer,Nombre,Contenido,propietario,shareList]
+%[idDoc, idVer,Nombre,Contenido,propietario]
 %Constructor
 %Domains
 %Predicates
@@ -230,19 +241,19 @@ getPlataformActiveUsr([NameP,DateP,_,_,ActiveP],PActive):-
 
 
 createDoc(IdDoc,Fecha,Nombre,Content,Owner,NewDoc):-
-    NewDoc = [IdDoc,1,Fecha,Nombre,Content,Owner,[]].
+    NewDoc = [IdDoc,1,Fecha,Nombre,Content,Owner].
 
 %-----------------Pertenencia--------------
 %Domains
 %listDoc: doc
 %Predicates
-%isDoc([idDoc,idVer,Fecha,Nombre,Content,Owner,_]).
+%isDoc([idDoc,idVer,Fecha,Nombre,Content,Owner]).
 %Goals
 %Pertenencia, permite verificar si el dato ingresado es del tipo Doc.
 %clauses
 %Regla 
 
-isDoc([IdDoc,IdVer,Fecha,Nombre,Content,[Owner|_],_]):-
+isDoc([IdDoc,IdVer,Fecha,Nombre,Content,[Owner|_]]):-
     integer(IdDoc),
     integer(IdVer),
     isFecha(Fecha),
@@ -255,15 +266,39 @@ isDoc([IdDoc,IdVer,Fecha,Nombre,Content,[Owner|_],_]):-
 %list: doc
 %GetID: integer
 %Predicates
-%getIDdoc([listDoc],GetID]).
+%getALGOdoc([listDoc],GetID]).
 %Goals
-% Obtener el id del ultimo doc creado.
+% Obtener el elemento que se busca del doc.
 %clauses
 %Regla 
 
-getIDdoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner,_],GetID):-
-    isDoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner,_]),
+%Obtiene ID doc
+getIDdoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner],GetID):-
+    isDoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner]),
     GetID = IdDoc.
+%Obtiene ID ver
+getIDVer([IdDoc,IdVer,Fecha,Nombre,Content,Owner],GetVer):-
+    isDoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner]),
+    GetVer = IdVer.
+%Obtiene fecha doc
+getFechaDoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner],GetDateDoc):-
+    isDoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner]),
+    GetDateDoc = Fecha.
+
+%Obtiene Nombre doc
+getNombreDoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner],GetNombreDoc):-
+    isDoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner]),
+    GetNombreDoc = Nombre.
+
+%Obtiene contenido doc
+getContentDoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner],GetContent):-
+    isDoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner]),
+    GetContent = Content.
+%Obtiene propietario doc
+getOwnerDoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner],GetOwner):-
+    isDoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner]),
+    GetOwner = Owner.
+
 %Domains
 %list: doc
 %GetOwner: list
@@ -274,8 +309,8 @@ getIDdoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner,_],GetID):-
 %clauses
 %Regla 
 
-getOwnerDoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner,_],GetOwner):-
-    isDoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner,_]),
+getOwnerDoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner],GetOwner):-
+    isDoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner]),
     GetOwner = Owner.
 
 
@@ -303,6 +338,69 @@ getDocOwnerByID([_|Cdr],GetOwner,Id):-
 
 
 
+%Domains
+%list: docs
+%IdDoc: list
+%Predicates
+%getListId([],IdDoc).
+%Goals
+% Obtener los id de los documentos
+%clauses
+%Regla 
+
+getListId([],_):-!.
+
+getListId([Doc|_],IdDoc):-
+    getIDdoc(Doc,IdDoc).
+
+getListId([_|CarDoc],IdDoc):-
+    getListId(CarDoc,IdDoc).
+
+%Domains
+%ListDocs: list
+%ListID: list
+%Predicates
+%getFinalListId(ListDocs,ListID).
+%Goals
+% Obtener los id de los documentos en una lista
+%clauses
+%Regla 
+getFinalListId(ListDocs,ListID):-
+    findall(Ids,getListId(ListDocs,Ids),ListID).
+
+
+
+%Domains
+%ListDocs: list
+%Result: integer
+%Predicates
+%getMaxId([Doc1|Cdr], Result).
+%Goals
+% Obtener el max id de la lista.
+%clauses
+%Regla 
+getMaxId([Doc],Doc):-!.
+getMaxId([Doc1|Cdr], Result) :-
+    getMaxId(Cdr,Doc2),
+    ( Doc1 >= Doc2, Result=Doc1 ;
+      Result=Doc2), !.
+
+
+
+
+%Domains
+%Dato: dato
+%list: list
+%Resultado : dato
+%Predicates
+%myDeleteElemList(Dato, list, Resultado).
+%Goals
+% elimina un elemento de una lista
+%clauses
+%Regla 
+myDeleteElemList(Dato, [Dato|Cdr], Cdr):- !.
+myDeleteElemList(Dato, [Car|Cdr], [Car|Resultado]) :-
+    myDeleteElemList(Dato, Cdr, Resultado).
 
 %Domains
 %list: doc
@@ -315,14 +413,62 @@ getDocOwnerByID([_|Cdr],GetOwner,Id):-
 %Regla
 
 getNewID([], GetterID) :- 
-    GetterID is 1.
-getNewID([Car|_], GetterID) :-
-    isDoc(Car), 
-    getIDdoc(Car, ID), 
-    GetterID is ID+1.
+    GetterID is 1,!.
+getNewID(Docs, GetterID) :-
+    getFinalListId(Docs,ListId),
+    reverse(ListId,ReverseListId),
+    myDeleteElemList(_,ReverseListId,NewListId),
+    getMaxId(NewListId,MaxId),
+    GetterID is MaxId+1,!.
 
 
-%---------------Funciones extras-------------------------------
+
+%Domains
+%list: doc
+%ID: integer
+%DocById: doc
+%Predicates
+%getDocsByID(Documents,ID,DocById).
+%Goals
+%Obtiene un doc especificos a partir de un ID.
+%clauses
+%Regla
+getDocsByID([],_,_):-fail,!.
+
+getDocsByID([Doc|_],ID,DocById):-
+    getIDdoc(Doc,DocID),
+    DocID = ID,
+    DocById = Doc.
+
+getDocsByID([_|CdrDoc],ID,DocById):-
+    getDocsByID(CdrDoc,ID,DocById).
+
+
+%---------------Predicados extras-------------------------------
+%Domains
+%Doc: doc
+%Text: string
+%Date: Fecha
+%DocText: doc
+%Predicates
+%insertText(Doc,Text,Date,DocText).
+%Goals
+%Agrega texto al contenido de un doc.
+%clauses
+%Regla
+
+
+insertText(Doc,Text,Date,DocText):-
+    isDoc(Doc),
+    getIDdoc(Doc,IdDoc),
+    getIDVer(Doc,IdVer),
+    (IdVerNew is IdVer + 1),
+    getNombreDoc(Doc,NombreDoc),
+    getContentDoc(Doc,ContentDoc),
+    getOwnerDoc(Doc,OwnerDoc),
+    string_concat(ContentDoc,Text,NewContent),
+    DocText = [IdDoc,IdVerNew,Date,NombreDoc,NewContent,OwnerDoc].
+
 
 
 %ListaPermisos = ["W","R","C"] <- o variaciones
@@ -457,7 +603,9 @@ paradigmaDocsRegister(Sn1, Fecha, Username, Password, Sn2) :-
     getPlataformDocs(Sn1,PlataformDocs), 
     getPlataformDate(Sn1, DatePlataform),
     getPlataformActiveUsr(Sn1,ActiveUsrPlataform),
-    Sn2 = [PlataformName, DatePlataform, NuevosUsuarios,PlataformDocs,ActiveUsrPlataform].
+    getPlataformShare(Sn1,ShareList),
+    getPlataformDocsVer(Sn1,DocsVersions),
+    Sn2 = [PlataformName, DatePlataform, NuevosUsuarios,PlataformDocs,ActiveUsrPlataform,ShareList,DocsVersions].
 
 
 
@@ -543,7 +691,9 @@ paradigmaDocsCreate(Sn1,Fecha,Nombre,Contenido,Sn2):-
     getPlataformUsers(Sn1, PaUsers),
     getPlataformName(Sn1, PlataformName),
     getPlataformDate(Sn1, DatePlataform),
-    Sn2 = [PlataformName, DatePlataform, PaUsers,ListDocs,[]]. 
+    getPlataformShare(Sn1,ShareList),
+    getPlataformDocsVer(Sn1,DocsVersions),
+    Sn2 = [PlataformName, DatePlataform, PaUsers,ListDocs,[],ShareList,DocsVersions]. 
 %----------------------------------------------------------
 %-----------------Share------------------------------------
 %Que haya una sesion iniciada
@@ -553,6 +703,7 @@ paradigmaDocsCreate(Sn1,Fecha,Nombre,Contenido,Sn2):-
 %ListaUsernamesPermitidos = ["Pepito","Juan"]
 %Salida = [[IdDoc,userName,[Permisos]],[IdDoc,userName,[Permisos]]]
 paradigmaDocsShare(Sn1, DocId,ListaPermisos,ListaUsernamesPermitidos,Sn2):-
+    not(notLogin(Sn1)),
     getPlataformActiveUsr(Sn1,ActiveUsr),
     getPlataformDocs(Sn1,Docs),
     getDocOwnerByID(Docs,Owner,DocId),
@@ -564,16 +715,142 @@ paradigmaDocsShare(Sn1, DocId,ListaPermisos,ListaUsernamesPermitidos,Sn2):-
     getPlataformDocs(Sn1,Pldocs),
     getPlataformName(Sn1, PlataformName),
     getPlataformDate(Sn1, DatePlataform),
-    Sn2 = [PlataformName, DatePlataform, PaUsers,Pldocs,ListaShare]. 
+    getPlataformDocsVer(Sn1,DocsVersions),
+    Sn2 = [PlataformName, DatePlataform, PaUsers,Pldocs,[],ListaShare,DocsVersions]. 
     
-    
+    %[Name,Date,Registrados,Documentos,Online,Share,DocVersions]
 
 
+%---------------Pertenencia-----------------------------------
+%Domains
+%list: share
+%Predicates
+%isShare([ID,User,PermissionList]).
+%Goals
+% verifica que una lista sea de tipo share.
+%clauses
+%Regla 
+isShare([ID,User,PermissionList]):-
+    integer(ID),
+    string(User),
+    is_list(PermissionList).
+
+
+%--------SelectoresShare-----------------------------------------------
+%Domains
+%list: share
+%ShareDato: dato
+%Predicates
+%getShareDato([ID,User,PermissionList],ShareDato).
+%Goals
+%Selecciona un dato especifico de la lista share.
+%clauses
+%Regla 
+getShareID([ID,User,PermissionList],ShareId):-
+    isShare([ID,User,PermissionList]),
+    ShareId = ID.
+
+getShareUsr([ID,User,PermissionList],ShareUsr):-
+    isShare([ID,User,PermissionList]),
+    ShareUsr = User.
+
+getSharePermissionList([ID,User,PermissionList],SharePermissionList):-
+    isShare([ID,User,PermissionList]),
+    SharePermissionList = PermissionList.
 
 %----------------------------------------------------------------------------
+%-------------------------------------Add------------------------------------
 
 
+%Domains
+%list: usr
+%ShareList: list
+%MyId: integer
+%Predicates
+%writePermission(User,ShareList,MyId).
+%Goals
+%Pregunta si un usr tiene permiso de escritura.
+%clauses
+%Regla 
+writePermission(_,[],_):- fail,!.
+
+writePermission([User|_],[ShareList|_],MyId):-
+    isShare(ShareList),
+    getShareUsr(ShareList,ShareUsr),
+    getShareID(ShareList,ShareID),
+    ShareID = MyId,
+    User = ShareUsr,
+    getSharePermissionList(ShareList,Permissions),
+    member("W",Permissions).
+
+
+writePermission(User,[_|CdrShareList],MyId):-
+    writePermission(User,CdrShareList,MyId).
+    
+%Domains
+%Sn1: plataform
+%DocId: integer
+%Predicates
+%isOwner(Sn1,DocId).
+%Goals
+%Pregunta si un usr es propietario de un doc.
+%clauses
+%Regla 
+
+isOwner(Sn1,DocId):-
+    getPlataformActiveUsr(Sn1,ActiveUsr),
+    getPlataformDocs(Sn1,Docs),
+    getDocOwnerByID(Docs,Owner,DocId),
+    ActiveUsr = Owner.
+
+%Domains
+%Sn1: plataform
+%DocId: integer
+%Predicates
+%isWriteP(Sn1,DocId).
+%Goals
+%Inicializa writePermission.
+%clauses
+%Regla 
+isWriteP(Sn1,DocId):-
+    getPlataformActiveUsr(Sn1,ActiveUsr),
+    getPlataformShare(Sn1,ShareList),
+    writePermission(ActiveUsr,ShareList,DocId).
+
+%Domains
+%Sn1: plataform
+%DocumentId: integer
+%Date: Fecha
+%ContenidoTexto: string
+%Sn2: plataform
+%Predicates
+%paradigmaDocsAdd(Sn1, DocumentId, Date, ContenidoTexto, Sn2).
+%Goals
+%Permite agregar texto al final del contenido de un doc especifico si es
+%que se cumplen todos los requisitos.
+%clauses
+%Regla 
+paradigmaDocsAdd(Sn1, DocumentId, Date, ContenidoTexto, Sn2):-
+    not(notLogin(Sn1)),
+    (isOwner(Sn1,DocumentId);isWriteP(Sn1,DocumentId)),
+    getPlataformDocs(Sn1,Docs),
+    getDocsByID(Docs,DocumentId,DocById),
+    myDeleteElemList(DocById,Docs,NewDocs),
+    insertText(DocById,ContenidoTexto,Date,DocText),
+    append([DocText],NewDocs,ListDocs),
+    getPlataformUsers(Sn1, PaUsers),
+    getPlataformName(Sn1, PlataformName),
+    getPlataformDate(Sn1, DatePlataform),
+    getPlataformShare(Sn1,ShareList),
+    getPlataformDocsVer(Sn1,DocsVersions),
+    append(DocById,DocsVersions,NewVersions),
+    Sn2 = [PlataformName, DatePlataform, PaUsers,ListDocs,[],ShareList,NewVersions],!. 
+    
+  
 /*
+
+
+
 
 EJEMPLOS
 
@@ -600,25 +877,64 @@ paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),p
 paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
 paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
 paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsShare(Sn5,1,["W","R","C"],["manolo"],Snfinal).
+
+------------------------------------------------Add testing-------------------------------------------------------------------------------------------------------
+Correcto porque "driques" es owner del doc 1.
+-> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
+paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
+paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
+paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsShare(Sn5,1,["W","R","C"],["manolo"],Snfinal),
+paradigmaDocsLogin(Snfinal,"driques","1234",Sn6),paradigmaDocsAdd(Sn6,1,FechaNueva," CONTENIDO AGREGADO 1",Sn7).
+
+Correcto porque "manolo" tiene permisos de escritura en el doc 1.
+-> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
+paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
+paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
+paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsShare(Sn5,1,["W","R","C"],["manolo"],Snfinal),
+paradigmaDocsLogin(Snfinal,"manolo","1234",Sn6),paradigmaDocsAdd(Sn6,1,_,_,Sn7).
+
+Incorrecto porque "driques" no es owner ni tiene permisos de escritura en el doc 2.
+-> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
+paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
+paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
+paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsShare(Sn5,1,["W","R","C"],["manolo"],Snfinal),
+paradigmaDocsLogin(Snfinal,"driques","1234",Sn6),paradigmaDocsAdd(Sn6,2,_,_,Sn7).
+
+
+
+
+
+%-----------------------------------------------Creacion de nuevo doc ---------------------------------------------------
+%Se crea otro documento para ver si el nuevo predicado que toma el id max suma al nuevo id del doc.
+
+fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
+paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
+paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
+paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsShare(Sn5,1,["W","R","C"],["manolo"],Snfinal),
+paradigmaDocsLogin(Snfinal,"driques","1234",Sn6),paradigmaDocsAdd(Sn6,1,FechaNueva," CONTENIDO AGREGADO 1",Sn7),paradigmaDocsLogin(Sn7,"manolo","1234",Sn8),
+paradigmaDocsCreate(Sn8,FechaNueva,"UltimoDoc Test","soy el ultimo doc",Sn9).
 */
 
 
 
-
-
-
-
-
-%------------------------------Funciones y recordatorios personales--------------------------------------
+%[1, 2, [1, 2, 2021], "NuevoDoc 1", "soy un doc CONTENIDO AGREGADO 1", ["driques"], [2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]]].
+% [[2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]], [1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"]]].
+%[[1, 2, [1, 2, 2021], "NuevoDoc 1", "soy un doc CONTENIDO AGREGADO 1", ["driques"]], [2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]]].
+%------------------------------Predicados y recordatorios personales--------------------------------------
 
 /*
-set_prolog_flag(answer_write_options,
-                   [ quoted(true),
-                     portray(true),
-                     spacing(next_argument)
-                   ]).*/
+    set_prolog_flag(answer_write_options,
+                       [ quoted(true),
+                         portray(true),
+                         spacing(next_argument)
+                       ]).
 
-%Objetivo: elimina un elemento de una lista
-myDeleteElemList(Dato, [Dato|Cdr], Cdr):- !.
-myDeleteElemList(Dato, [Car|Cdr], [Car|Resultado]) :-
-    myDeleteElemList(Dato, Cdr, Resultado).
+
+
+Predicado Add listo, solo falta devolverse a versiones anteriores, imprimir por pantalla, y dar todos los ejemplos.
+
+
+
+
+    */
+
