@@ -294,10 +294,7 @@ getNombreDoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner],GetNombreDoc):-
 getContentDoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner],GetContent):-
     isDoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner]),
     GetContent = Content.
-%Obtiene propietario doc
-getOwnerDoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner],GetOwner):-
-    isDoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner]),
-    GetOwner = Owner.
+
 
 %Domains
 %list: doc
@@ -314,6 +311,21 @@ getOwnerDoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner],GetOwner):-
     GetOwner = Owner.
 
 
+getDocumentsByOwner([],_,_):- !.
+
+getDocumentsByOwner([Car|_],Owner,DocOwner):-
+    isDoc(Car),
+    getOwnerDoc(Car,POwner),
+    Owner = POwner,
+    DocOwner = Car.
+
+
+getDocumentsByOwner([_|Cdr],Owner,DocOwner):-
+    getDocumentsByOwner(Cdr,Owner,DocOwner).
+
+
+getAllDocsByOwner(Docs,Owner,DocOwnerList):-
+    findall(DocOwner,getDocumentsByOwner(Docs,Owner,DocOwner),DocOwnerList).
 
 
 %Domains
@@ -327,7 +339,7 @@ getOwnerDoc([IdDoc,IdVer,Fecha,Nombre,Content,Owner],GetOwner):-
 %clauses
 %Regla 
 
-getDocOwnerByID([],_,_):- fail,!.
+getDocOwnerByID([],_,_):-!.
 getDocOwnerByID([Car|_],GetOwner,Id):-
     isDoc(Car),
     getIDdoc(Car,IdDoc),
@@ -843,13 +855,197 @@ paradigmaDocsAdd(Sn1, DocumentId, Date, ContenidoTexto, Sn2):-
     getPlataformDate(Sn1, DatePlataform),
     getPlataformShare(Sn1,ShareList),
     getPlataformDocsVer(Sn1,DocsVersions),
-    append(DocById,DocsVersions,NewVersions),
+    append([DocById],DocsVersions,NewVersions),
     Sn2 = [PlataformName, DatePlataform, PaUsers,ListDocs,[],ShareList,NewVersions],!. 
     
-  
+
+
+
+
+
+
+%----------------------------------------------------------------------------
+%-------------------------------------RestoreVersion------------------------------------
+%------------------------Debo comentar getDocByVerAndId
+
+
+
+
+
+getDocByVerAndId([],_,_,_):- fail,!.
+
+getDocByVerAndId([Car|_],VerId,DocId,GetDoc):-
+    isDoc(Car),
+    getIDdoc(Car,IdFromCar),
+    getIDVer(Car,VerFromCar),
+    VerId = VerFromCar,
+    DocId = IdFromCar,
+    GetDoc = Car,!.
+
+getDocByVerAndId([_|Cdr],VerId,DocId,GetDoc):-
+    getDocByVerAndId(Cdr,VerId,DocId,GetDoc).
+
+
+
+paradigmaDocsRestoreVersion(Sn1, DocumentId, IdVersion, Sn2):-
+    not(notLogin(Sn1)),
+    isOwner(Sn1,DocumentId),
+    getPlataformDocsVer(Sn1,DocsVersions),
+    getDocByVerAndId(DocsVersions,IdVersion,DocumentId,GetDocVer),
+
+    getPlataformDocs(Sn1,Docs),
+    getDocsByID(Docs,DocumentId,DocById),
+    myDeleteElemList(DocById,Docs,NewDocs),
+    
+    append([GetDocVer],NewDocs,ListDocs),
+    getPlataformUsers(Sn1, PaUsers),
+    getPlataformName(Sn1, PlataformName),
+    getPlataformDate(Sn1, DatePlataform),
+    getPlataformShare(Sn1,ShareList),
+    getPlataformDocsVer(Sn1,DocsVersions),
+
+    myDeleteElemList(GetDocVer,DocsVersions,NewDocsVersion),
+    append([DocById],NewDocsVersion,NewVersions),
+    Sn2 = [PlataformName, DatePlataform, PaUsers,ListDocs,[],ShareList,NewVersions],!. 
+
+
+
+
+%----------------------------------------------------------------------------
+%-------------------------------------paradigmaDocsToString-----------------------------
+
+fechaToString(Fecha,StrFecha):-
+    
+    getDia(Fecha,Dia),
+    string_concat("La fecha del documento es: ",Dia,FS),
+    getMes(Fecha,Mes),
+    string_concat(FS," del ",FS1),
+    string_concat(FS1,Mes,FS2),
+    string_concat(FS2," del ",FS3),    
+    getAnio(Fecha,Anio),
+    string_concat(FS3,Anio,FS4),
+    string_concat(FS4,"\n",StrFecha).
+
+%docsToString(DocsList,DocsStr):-
+docsToString([],_,_):- !.
+docsToString([Car|_],ActualStr,DocsStr):-
+    getIDdoc(Car,IdDoc),
+    string_concat("<- ID documento ",ActualStr,Str1),
+    string_concat(IdDoc,Str1,Str2),
+
+    getIDVer(Car,IdVer),
+    string_concat("<- ID Version ",Str2,Str3),
+    string_concat(IdVer,Str3,Str4),
+    string_concat("\n",Str4,Str5),
+    getFechaDoc(Car,Fecha),
+    fechaToString(Fecha,FechaStr),
+    string_concat(FechaStr,Str5,Str6),
+    getNombreDoc(Car,NombreDoc),
+    string_concat(Str6,"\nNombre documento: ",Str7),
+    string_concat(Str7,NombreDoc,Str8),
+    string_concat(Str8,"\n",Str9),
+    getContentDoc(Car,ContentDoc),
+    string_concat(Str9,"Contenido doc: \n",Str10),
+    string_concat(Str10,ContentDoc,Str11),
+    string_concat(Str11,"\n",DocsStr).
+    
+docsToString([_|Cdr],ActualStr,DocsStr):-
+    docsToString(Cdr,ActualStr,DocsStr).
+
+
+getCar([Car|_],Car).
+%----------------------------------------
+%stringShare(Compartidos,ToStr,Usr):-
+
+nombrePermisos([],_):-!.
+nombrePermisos([Car|_],Permiso):-
+    (Car = "W" , Permiso = " Escritura ");
+    (Car="R",Permiso = " Lectura ");
+    (Car="C", Permiso = "Comentario").
+
+nombrePermisos([_|Cdr],Permiso):-
+    nombrePermisos(Cdr,Permiso).
+
+permisosToStr(Permissions,PermissionsStr):-
+    findall(Pms,nombrePermisos(Permissions,Pms),ListaPermisos),
+    reverse(ListaPermisos,ReverseListPerm),
+    myDeleteElemList(_,ReverseListPerm,NewListPerm),
+    reverse(NewListPerm,FinalList),
+    atomics_to_string(FinalList,PermissionsStr).
+
+    
+
+stringShare([],_,_):-!.
+
+stringShare([Car|_],Usr,ToStr):-
+    isShare(Car),
+    getShareID(Car,ShareID),
+    string_concat("\nID documento compartido: ",ShareID,Share1),
+    getShareUsr(Car,ShareUsr),
+    ShareUsr = Usr,
+    getSharePermissionList(Car,Permissions),
+    permisosToStr(Permissions,PermissionsStr),
+    string_concat(Share1,"\ncon permisos: ",Share2),
+    string_concat(Share2,PermissionsStr,Share3),
+    string_concat("\n",Share3,ToStr).
+
+
+stringShare([_|Cdr],Usr,ToStr):-
+    stringShare(Cdr,Usr,ToStr).
+
+
+
+
+strOnline(Sn1,StrOut1):-
+    getPlataformActiveUsr(Sn1,ActiveUsr),
+    getPlataformDocs(Sn1,DocsPlataform),
+    getCar(ActiveUsr,StrActUsr),
+    string_concat("\nUsuario activo: ",StrActUsr,StrOut),
+    string_concat(StrOut,"\n",StrOut2),
+    getAllDocsByOwner(DocsPlataform,ActiveUsr,DocOwnerList),
+    findall(StrDocsSalida,docsToString(DocOwnerList,"",StrDocsSalida),ListDocs),
+    reverse(ListDocs,ReverseListDocs),
+    myDeleteElemList(_,ReverseListDocs,NewListDocs),
+    reverse(NewListDocs,FinalListDocs),
+    atomics_to_string(FinalListDocs,FinalStrDocs),
+    string_concat(StrOut2,FinalStrDocs,MyDocs),
+    string_concat(MyDocs,"\nDocumentos compartidos conmigo -\n",ShareDocs),
+    getPlataformShare(Sn1,ShareList),
+    findall(StrShare,stringShare(ShareList,StrActUsr,StrShare),ListShareStr),
+    reverse(ListShareStr,ReverseListShare),
+    myDeleteElemList(_,ReverseListShare,NewListShare),
+    reverse(NewListShare,FinalListShare),
+    atomics_to_string(FinalListShare,FinalStrShare),
+    string_concat(ShareDocs,FinalStrShare,StrOut1).
+
+
+
+
+%strOffline(Sn1,StrOut):-
+
+
+paradigmaDocsToString(Sn1,StrOut):-
+    not(notLogin(Sn1)) ->
+    (strOnline(Sn1,StrOut1);
+    strOffline(Sn1,StrOut1)),
+    getPlataformName(Sn1,NamePlataform),
+    string_concat(NamePlataform,StrOut1,StrOut).
+
 /*
+Sn9 = ["GdocsCopy", [1, 2, 2021], [["manolo", "1234", [1, 2, 2021]], ["driques", "1234", [1, 2, 2021]]], [[1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"]], [2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]]], ["driques"], [[1, "manolo", ["W", "R", "C"]], _A], [[1, 2, [1, 2, 2021], "NuevoDoc 1", "soy un doc CONTENIDO AGREGADO 1", ["driques"]]]]
+strOnline(["GdocsCopy", [1, 2, 2021], [["manolo", "1234", [1, 2, 2021]], ["driques", "1234", [1, 2, 2021]]], [1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"], [2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]]], ["driques"], [[1, "manolo", ["W", "R", "C"]], _A], [[1, 2, [1, 2, 2021], "NuevoDoc 1", "soy un doc CONTENIDO AGREGADO 1", ["driques"]]]],AA).
+
+*/
 
 
+
+
+
+
+
+/*
+                        
+[[1, "manolo", ["W", "R", "C"]],[3, "manolo", ["W","C"]],[5, "das", ["W", "R", "C"]],[2, "manolo", ["C"]],_A]
 
 
 EJEMPLOS
@@ -913,11 +1109,35 @@ paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,Fe
 paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsShare(Sn5,1,["W","R","C"],["manolo"],Snfinal),
 paradigmaDocsLogin(Snfinal,"driques","1234",Sn6),paradigmaDocsAdd(Sn6,1,FechaNueva," CONTENIDO AGREGADO 1",Sn7),paradigmaDocsLogin(Sn7,"manolo","1234",Sn8),
 paradigmaDocsCreate(Sn8,FechaNueva,"UltimoDoc Test","soy el ultimo doc",Sn9).
+
+
+
+
+
+
+
+%------------------------------------Test
+
+
+
+fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
+paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
+paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
+paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsShare(Sn5,1,["W","R","C"],["manolo"],Snfinal),
+paradigmaDocsLogin(Snfinal,"driques","1234",Sn6),paradigmaDocsAdd(Sn6,1,FechaNueva," CONTENIDO AGREGADO 1",Sn7),paradigmaDocsLogin(Sn7,"driques","1234",Sn8),
+paradigmaDocsRestoreVersion(Sn8, 1, 1, Sn9).
+
+
+
+
+
+
 */
 
 
 
 %[1, 2, [1, 2, 2021], "NuevoDoc 1", "soy un doc CONTENIDO AGREGADO 1", ["driques"], [2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]]].
+
 % [[2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]], [1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"]]].
 %[[1, 2, [1, 2, 2021], "NuevoDoc 1", "soy un doc CONTENIDO AGREGADO 1", ["driques"]], [2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]]].
 %------------------------------Predicados y recordatorios personales--------------------------------------
