@@ -1077,7 +1077,7 @@ paradigmaDocsToString(Sn1,StrOut):-
 
 
 /*
-Sn9 = ["GdocsCopy", [1, 2, 2021], [["manolo", "1234", [1, 2, 2021]], ["driques", "1234", [1, 2, 2021]]], [[1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"]], [2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]]], ["driques"], [[1, "manolo", ["W", "R", "C"]],,[3, "manolo", ["W","C"]],[5, "das", ["W", "R", "C"]],[2, "manolo", ["C"]],_A], [[1, 2, [1, 2, 2021], "NuevoDoc 1", "soy un doc CONTENIDO AGREGADO 1", ["driques"]]]]
+Sn9 = ["GdocsCopy", [1, 2, 2021], [["manolo", "1234", [1, 2, 2021]], ["driques", "1234", [1, 2, 2021]]], [[1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"]], [2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]]], ["manolo"], [[1, "manolo", ["W", "R", "C"]],,[3, "manolo", ["W","C"]],[5, "das", ["W", "R", "C"]],[2, "manolo", ["C"]],_A], [[1, 2, [1, 2, 2021], "NuevoDoc 1", "soy un doc CONTENIDO AGREGADO 1", ["driques"]]]]
 strOnline(["GdocsCopy", [1, 2, 2021], [["manolo", "1234", [1, 2, 2021]], ["driques", "1234", [1, 2, 2021]]], [1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"], [2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]]], ["driques"], [[1, "manolo", ["W", "R", "C"]], _A], [[1, 2, [1, 2, 2021], "NuevoDoc 1", "soy un doc CONTENIDO AGREGADO 1", ["driques"]]]],AA).
 
 
@@ -1085,7 +1085,7 @@ strOnline(["GdocsCopy", [1, 2, 2021], [["manolo", "1234", [1, 2, 2021]], ["driqu
 
 
 
-paradigmaDocsToString(["GdocsCopy", [1, 2, 2021], [["manolo", "1234", [1, 2, 2021]], ["driques", "1234", [1, 2, 2021]]], [[1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"]], [2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]]], ["driques"], [[1, "manolo", ["W", "R", "C"]], _A], [[1, 2, [1, 2, 2021], "NuevoDoc 1", "soy un doc CONTENIDO AGREGADO 1", ["driques"]]]],Str1),write(Str1).
+revokeWithName(["GdocsCopy", [1, 2, 2021], [["manolo", "1234", [1, 2, 2021]], ["driques", "1234", [1, 2, 2021]]], [[1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"]], [2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]]], ["driques"], [[1, "manolo", ["W", "R", "C"]],[3, "manolo", ["W","C"]],[5, "das", ["W", "R", "C"]],[2, "manolo", ["C"]],_A], [[1, 2, [1, 2, 2021], "NuevoDoc 1", "soy un doc CONTENIDO AGREGADO 1", ["driques"]]]],Str1).
 
 */
 
@@ -1142,27 +1142,109 @@ revokeWithIds(Sn1,ListIDs,FinalShareList):-
 paradigmaDocsRevokeAllAccesses( Sn1, DocumentIds, Sn2):-
     not(notLogin(Sn1)),
     getPlatformActiveUsr(Sn1,ActiveUsr),
-    getPlatformDocs(Sn1,Docs),
     countCheckId(DocumentIds,ActiveUsr,Docs),
     DocumentIds = [] ->
     (revokeWithName(Sn1,AllIds),
-    revokeWithName(Sn1,AllIds),
     revokeWithIds(Sn1,AllIds,FinalShareList),
     getPlatformUsers(Sn1, PaUsers),
     getPlatformName(Sn1, PlatformName),
     getPlatformDate(Sn1, DatePlatform),
     getPlatformDocsVer(Sn1,DocsVersions),
+    getPlatformDocs(Sn1,Docs),
     Sn2 = [PlatformName, DatePlatform, PaUsers,Docs,[],FinalShareList,DocsVersions]);
     (revokeWithIds(Sn1,DocumentIds,FinalShareList),
     getPlatformUsers(Sn1, PaUsers),
     getPlatformName(Sn1, PlatformName),
     getPlatformDate(Sn1, DatePlatform),
     getPlatformDocsVer(Sn1,DocsVersions),
+    getPlatformDocs(Sn1,Docs),
     Sn2 = [PlatformName, DatePlatform, PaUsers,Docs,[],FinalShareList,DocsVersions]),!.
 
 
 
+
+
+
+%------------------------------------------------------------------------------------------------
+%-------------------------------------paradigmaDocsSearch-----------------------------
+%getShareIDsUser(ShareList,Usr,AllIds)
+
+
+getShareDocsUser([],_,_,_):- !.
+
+getShareDocsUser([Car|_],Usr,Docs,NewDoc):-
+    getShareUsr(Car,ShareUsr),
+    ShareUsr = Usr,
+    getShareID(Car,ShareID),
+    getDocsByID(Docs,ShareID,NewDoc).
+    
+    
+getShareDocsUser([_|Cdr],Usr,Docs,NewDoc):-
+    getShareDocsUser(Cdr,Usr,Docs,NewDoc).
+
+allShareWithMe(ShareList,Usr,Docs,DocsList):-
+    findall(NewDoc,getShareDocsUser(ShareList,Usr,Docs,NewDoc),DocsList).
+
+isInString(String,Palabra):-
+    sub_string(String, _, Length, _, Palabra),
+    Length > 0,!.
+
+%getDocIfEqualStr(Docs,Str,DocOut)
+getDocIfEqualStr([],_,_):- !.
+
+getDocIfEqualStr([Car|_],Text,DocOut):-
+    getContentDoc(Car,ContentDoc),
+    isInString(ContentDoc,Text),
+    DocOut = Car.
+
+getDocIfEqualStr([_|Cdr],Text,DocOut):-
+    getDocIfEqualStr(Cdr,Text,DocOut).
+
+
+paradigmaDocsSearch(Sn1, SearchText, Documents):-
+    not(notLogin(Sn1)),
+    getPlatformDocsVer(Sn1,DocsVersions),
+    getPlatformShare(Sn1,ShareList),
+    getPlatformActiveUsr(Sn1,ActiveUsr),
+    getPlatformDocs(Sn1,DocsPlatform),
+    getDocumentsByOwner(DocsPlatform,ActiveUsr,DocOwner),
+    getCar(ActiveUsr,StrActUsr),
+    allShareWithMe(ShareList,StrActUsr,DocsPlatform,ShareDocsMe),
+    findall(DocsEq,getDocIfEqualStr([DocOwner],SearchText,DocsEq),DocsPlat),
+    findall(DocsEq,getDocIfEqualStr(DocsVersions,SearchText,DocsEq),DocsVer),
+    append(DocsPlat,DocsVer,Docs1),
+    findall(DocsEq,getDocIfEqualStr(ShareDocsMe,SearchText,DocsEq),DocsSh),
+    append(DocsSh,Docs1,Documents),!.
+    
+    
+
+
+/*
+
+
+fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
+paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
+paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
+paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsShare(Sn5,1,["W","R","C"],["manolo"],Snfinal),
+paradigmaDocsLogin(Snfinal,"driques","1234",Sn6),paradigmaDocsAdd(Sn6,1,FechaNueva," CONTENIDO AGREGADO 1",Sn7),paradigmaDocsLogin(Sn7,"driques","1234",Sn8),
+paradigmaDocsSearch(Sn8,"soy", Sn9).
+
+
+
+allShareWithMe([[1, "manolo", ["W", "R", "C"]], [1, "pablo", ["W", "R", "C"]], [2, "pablo", ["W", "R", "C"]], _],"pablo",[[2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]], [1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"]]],Docs).
+["GdocsCopy", [1, 2, 2021], [["juan", "1234", [1, 2, 2021]], ["pablo", "1234", [1, 2, 2021]], ["manolo", "1234", [1, 2, 2021]], ["driques", "1234", [1, 2, 2021]]], [[2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]], [1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"]]], ["manolo"], [[1, "manolo", ["W", "R", "C"]], [1, "pablo", ["W", "R", "C"]], [1, "juan", ["W", "R", "C"]], _], []],)
+
+
     /*
+[[2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]], [1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"]]].
+ऀAAA = [[1, "manolo", ["W", "R", "C"]], [1, "pablo", ["W", "R", "C"]], [2, "juan", ["W", "R", "C"]], _].
+["GdocsCopy", [1, 2, 2021], [["juan", "1234", [1, 2, 2021]], ["pablo", "1234", [1, 2, 2021]], ["manolo", "1234", [1, 2, 2021]], ["driques", "1234", [1, 2, 2021]]], [[2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]], [1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"]]], ["manolo"], [[1, "manolo", ["W", "R", "C"]], [1, "pablo", ["W", "R", "C"]], [1, "juan", ["W", "R", "C"]], _], []]
+
+
+getPlatformShare(["GdocsCopy", [1, 2, 2021], [["juan", "1234", [1, 2, 2021]], ["pablo", "1234", [1, 2, 2021]], ["manolo", "1234", [1, 2, 2021]], ["driques", "1234", [1, 2, 2021]]], [[2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]], [1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"]]], ["manolo"], [[1, "manolo", ["W", "R", "C"]], [1, "pablo", ["W", "R", "C"]], [1, "juan", ["W", "R", "C"]], _], []]
+|    ,Share).
+
+    ["GdocsCopy", [1, 2, 2021], [["manolo", "1234", [1, 2, 2021]], ["driques", "1234", [1, 2, 2021]]], [[1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"]], [2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]]], ["manolo"], [[1, "manolo", ["W", "R", "C"]],,[3, "manolo", ["W","C"]],[5, "das", ["W", "R", "C"]],[2, "manolo", ["C"]],_A], [[1, 2, [1, 2, 2021], "NuevoDoc 1", "soy un doc CONTENIDO AGREGADO 1", ["driques"]]]]
     (revokeWithName(Sn1,AllIds),
     revokeWithIds(Sn1,AllIds,FinalShareList),
     getPlatformUsers(Sn1, PaUsers),
@@ -1185,7 +1267,7 @@ testIf(Number,Re):-
 
 %myDeleteElemList(Dato, list, Resultado).
 
-
+*/
 
 /*
 [[1, 2, [1, 2, 2021], "NuevoDoc 1", "soy un doc CONTENIDO AGREGADO 1", ["driques"]], [2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["driques"]]]
@@ -1219,7 +1301,8 @@ paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),p
 -> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
 paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
 paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
-paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsShare(Sn5,1,["W","R","C"],["manolo"],Snfinal).
+paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsRegister(Sn5,FechaNueva,"pablo","1234",Sn6),
+paradigmaDocsRegister(Sn6,FechaNueva,"juan","1234",Sn7),paradigmaDocsShare(Sn7,1,["W","R","C"],["manolo","pablo","juan"],Snfinal).
 
 ------------------------------------------------Add testing-------------------------------------------------------------------------------------------------------
 Correcto porque "driques" es owner del doc 1.
@@ -1286,7 +1369,7 @@ paradigmaDocsLogin(Snfinal,"driques","1234",Sn6),paradigmaDocsAdd(Sn6,1,FechaNue
 
 paradigmaDocsRevokeAllAccesses(["GdocsCopy", [1, 2, 2021], [["manolo", "1234", [1, 2, 2021]], ["driques", "1234", [1, 2, 2021]]], [[1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"]], [2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["driques"]]], ["driques"], [[1, "manolo", ["W", "R", "C"]],[3, "manolo", ["W","C"]],[5, "das", ["W", "R", "C"]],[2, "manolo", ["C"]],_A], [[1, 2, [1, 2, 2021], "NuevoDoc 1", "soy un doc CONTENIDO AGREGADO 1", ["driques"]]]],[1,2],ShareReturn).
 
-
+paradigmaDocsSearch(Sn1, SearchText, ShareDocsMe)
 */
 
 
