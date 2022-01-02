@@ -54,6 +54,29 @@ getAnio([Dia, Mes, Anio], ObtenAnio):-
     isFecha([Dia, Mes, Anio]),
     ObtenAnio = Anio.
 
+%Selectores
+%Domains
+%Fecha: fecha
+%StrFecha: string.
+%Predicates
+%fechaToString(Fecha,StrFecha).
+%Goals
+%Convertir un dato tipo fecha a string.
+%clauses
+%Regla 
+
+fechaToString(Fecha,StrFecha):-
+    
+    getDia(Fecha,Dia),
+    string_concat("La fecha del documento es: ",Dia,FS),
+    getMes(Fecha,Mes),
+    string_concat(FS," del ",FS1),
+    string_concat(FS1,Mes,FS2),
+    string_concat(FS2," del ",FS3),    
+    getAnio(Fecha,Anio),
+    string_concat(FS3,Anio,FS4),
+    string_concat(FS4,"\n",StrFecha).
+
 
 %--------------------------------------------------------------------------
 %TDA Usuario
@@ -350,6 +373,17 @@ getDocOwnerByID([_|Cdr],GetOwner,Id):-
     getDocOwnerByID(Cdr,GetOwner,Id).
 
 
+getDocOwnerByID1([],_,_):- fail,!.
+
+getDocOwnerByID1([Car|_],GetOwner,Id):-
+    isDoc(Car),
+    getIDdoc(Car,IdDoc),
+    IdDoc=Id,
+    getOwnerDoc(Car,GetOwner),!.
+
+getDocOwnerByID1([_|Cdr],GetOwner,Id):-
+    getDocOwnerByID1(Cdr,GetOwner,Id).
+
 
 %Domains
 %list: docs
@@ -520,7 +554,7 @@ otorgaPermisos([_|SiguientesUsers],ListaPermisos,DocId,Share):-
 %Predicates
 %creaListaShare(ListaUsernamesPermitidos,ListaPermisos,DocId,Share,ReturnList)
 %Goals
-%Encapsular la función otorgaPermisos para poder ejecutar findall y rellenar la lista
+%Encapsular la predicado otorgaPermisos para poder ejecutar findall y rellenar la lista
 %clauses
 %Regla 
 
@@ -586,7 +620,7 @@ existenUsernames(UsuariosRegistrados,[User|Cdr]):-
 
 existeUsuario(Pdocs, Username) :-
     isParadigmaDocs(Pdocs), 
-    getUsername(Pdocs, Users), 
+    getPlatformUsers(Pdocs, Users), 
     searchUsername(Users, Username).
 
 %Domains
@@ -729,10 +763,11 @@ paradigmaDocsShare(Sn1, DocId,ListaPermisos,ListaUsernamesPermitidos,Sn2):-
     getPlatformName(Sn1, PlatformName),
     getPlatformDate(Sn1, DatePlatform),
     getPlatformDocsVer(Sn1,DocsVersions),
-    Sn2 = [PlatformName, DatePlatform, PaUsers,Pldocs,[],ListaShare,DocsVersions],!. 
+    getPlatformShare(Sn1,SharePlatform),
+    append(ListaShare,SharePlatform,FinalShare),
+    Sn2 = [PlatformName, DatePlatform, PaUsers,Pldocs,[],FinalShare,DocsVersions],!. 
     
-    %[Name,Date,Registrados,Documentos,Online,Share,DocVersions]
-
+   
 
 %---------------Pertenencia-----------------------------------
 %Domains
@@ -872,6 +907,18 @@ paradigmaDocsAdd(Sn1, DocumentId, Date, ContenidoTexto, Sn2):-
 
 
 
+%Domains
+%DocsVersions: list
+%IdVersion: integer
+%DocumentId: integer
+%GetDocVer: Doc
+%Predicates
+%getDocByVerAndId(DocsVersions,IdVersion,DocumentId,GetDocVer)
+%Goals
+%Obtiene un doc con un id de versión y documento especifico.
+%clauses
+%Regla 
+
 
 getDocByVerAndId([],_,_,_):- fail,!.
 
@@ -885,6 +932,19 @@ getDocByVerAndId([Car|_],VerId,DocId,GetDoc):-
 
 getDocByVerAndId([_|Cdr],VerId,DocId,GetDoc):-
     getDocByVerAndId(Cdr,VerId,DocId,GetDoc).
+
+
+%Domains
+%Sn1: ParadigmaDocs
+%DocumentId: integer
+%IdVersion: integer
+%Sn2: ParadigmaDocs
+%Predicates
+%paradigmaDocsRestoreVersion(Sn1, DocumentId, IdVersion, Sn2)
+%Goals
+%genera una Platforma con el doc activo que cumpla la versión especifica.
+%clauses
+%Regla 
 
 
 
@@ -915,19 +975,29 @@ paradigmaDocsRestoreVersion(Sn1, DocumentId, IdVersion, Sn2):-
 %----------------------------------------------------------------------------
 %-------------------------------------paradigmaDocsToString-----------------------------
 
-fechaToString(Fecha,StrFecha):-
-    
-    getDia(Fecha,Dia),
-    string_concat("La fecha del documento es: ",Dia,FS),
-    getMes(Fecha,Mes),
-    string_concat(FS," del ",FS1),
-    string_concat(FS1,Mes,FS2),
-    string_concat(FS2," del ",FS3),    
-    getAnio(Fecha,Anio),
-    string_concat(FS3,Anio,FS4),
-    string_concat(FS4,"\n",StrFecha).
+%Domains
+%list: list
+%Car: dato.
+%Predicates
+%getCar([Car|_],Car)..
+%Goals
+%Obtener el primer elemento de una lista
+%clauses
+%Regla 
+
 getCar([Car|_],Car).
-%docsToString(DocsList,DocsStr):-
+
+
+%Domains
+%DocsList: list
+%DocsStr: string.
+%Predicates
+%docsToString(DocsList,DocsStr)
+%Goals
+%transformar documentos a un string legible
+%clauses
+%Regla 
+
 docsToString([],_,_):- !.
 docsToString([Car|_],ActualStr,DocsStr):-
     getIDdoc(Car,IdDoc),
@@ -960,8 +1030,18 @@ docsToString([_|Cdr],ActualStr,DocsStr):-
 
 
 %----------------------------------------
-%stringShare(Compartidos,ToStr,Usr):-
 
+
+
+%Domains
+%Permissions: list
+%Permiso: string.
+%Predicates
+%nombrePermisos(Permissions,Pms)
+%Goals
+%Transformar permisos a un string legible
+%clauses
+%Regla 
 nombrePermisos([],_):-!.
 nombrePermisos([Car|_],Permiso):-
     (Car = "W" , Permiso = " Escritura ");
@@ -971,6 +1051,17 @@ nombrePermisos([Car|_],Permiso):-
 nombrePermisos([_|Cdr],Permiso):-
     nombrePermisos(Cdr,Permiso).
 
+
+%Domains
+%Permissions: list
+%PermissionsStr: string.
+%Predicates
+%permisosToStr(Permissions,PermissionsStr)
+%Goals
+%Encapsular predicado nombrePermisos para obtener todos los resultados.
+%clauses
+%Regla 
+
 permisosToStr(Permissions,PermissionsStr):-
     findall(Pms,nombrePermisos(Permissions,Pms),ListaPermisos),
     reverse(ListaPermisos,ReverseListPerm),
@@ -978,7 +1069,18 @@ permisosToStr(Permissions,PermissionsStr):-
     reverse(NewListPerm,FinalList),
     atomics_to_string(FinalList,PermissionsStr).
 
-    
+
+
+%Domains
+%Compartidos: list
+%ToStr: string.
+%Usr: string
+%Predicates
+%stringShare(Compartidos,ToStr,Usr)
+%Goals
+%Transformar a string la lista de share.
+%clauses
+%Regla     
 
 stringShare([],_,_):-!.
 
@@ -1001,6 +1103,17 @@ stringShare([_|Cdr],Usr,ToStr):-
     stringShare(Cdr,Usr,ToStr).
 
 
+
+ 
+%Domains
+%Sn1: ParadigmaDocs
+%StrOut1: String
+%Predicates
+%strOnline(Sn1,StrOut1)
+%Goals
+%Transformar a string una Platforma paradigmaDocs con sesión iniciada.
+%clauses
+%Regla     
 
 
 strOnline(Sn1,StrOut1):-
@@ -1037,6 +1150,15 @@ strOnline(Sn1,StrOut1):-
     string_concat(StrVer,FinalStrDocsVer,StrOut1).
 
 
+%Domains
+%Sn1: ParadigmaDocs
+%StrOut1: String
+%Predicates
+%strOffline(Sn1,StrOut)
+%Goals
+%Transformar a string una Platforma paradigmaDocs con sesión offline.
+%clauses
+%Regla     
 
 
 strOffline(Sn1,StrOut):-
@@ -1068,6 +1190,16 @@ strOffline(Sn1,StrOut):-
 
 
 
+%Domains
+%Sn1: ParadigmaDocs
+%StrOut1: String
+%Predicates
+%paradigmaDocsToString(Sn1,StrOut)
+%Goals
+%Transformar a string una Platforma paradigmaDocs, predicado que encapsula y decide si es offline u online.
+%clauses
+%Regla     
+
 paradigmaDocsToString(Sn1,StrOut):-
     not(notLogin(Sn1)) ->
     (strOnline(Sn1,StrOut1),getPlatformName(Sn1,NamePlatform),
@@ -1076,33 +1208,42 @@ paradigmaDocsToString(Sn1,StrOut):-
     string_concat(NamePlatform,StrOut1,StrOut)),!.
 
 
-/*
-Sn9 = ["GdocsCopy", [1, 2, 2021], [["manolo", "1234", [1, 2, 2021]], ["driques", "1234", [1, 2, 2021]]], [[1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"]], [2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]]], ["manolo"], [[1, "manolo", ["W", "R", "C"]],,[3, "manolo", ["W","C"]],[5, "das", ["W", "R", "C"]],[2, "manolo", ["C"]],_A], [[1, 2, [1, 2, 2021], "NuevoDoc 1", "soy un doc CONTENIDO AGREGADO 1", ["driques"]]]]
-strOnline(["GdocsCopy", [1, 2, 2021], [["manolo", "1234", [1, 2, 2021]], ["driques", "1234", [1, 2, 2021]]], [1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"], [2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]]], ["driques"], [[1, "manolo", ["W", "R", "C"]], _A], [[1, 2, [1, 2, 2021], "NuevoDoc 1", "soy un doc CONTENIDO AGREGADO 1", ["driques"]]]],AA).
-
-
-
-
-
-
-revokeWithName(["GdocsCopy", [1, 2, 2021], [["manolo", "1234", [1, 2, 2021]], ["driques", "1234", [1, 2, 2021]]], [[1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"]], [2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]]], ["driques"], [[1, "manolo", ["W", "R", "C"]],[3, "manolo", ["W","C"]],[5, "das", ["W", "R", "C"]],[2, "manolo", ["C"]],_A], [[1, 2, [1, 2, 2021], "NuevoDoc 1", "soy un doc CONTENIDO AGREGADO 1", ["driques"]]]],Str1).
-
-*/
-
-
 
 
 
 %------------------------------------------------------------------------------------------------
 %-------------------------------------paradigmaDocsRevokeAllAccesses-----------------------------
+
+
+%Domains
+%ActiveUsr: list
+%Docs: Docs
+%Predicates
 %checkAllId(Ids,ActiveUsr,Docs)
+%Goals
+%Verificar los id con respecto al usuario activo.
+%clauses
+%Regla  
+
+checkAllId([],_,_):- fail,!.
 
 checkAllId([Car|_],ActiveUsr,Docs):-
-    getDocOwnerByID(Docs,Owner,Car),
-    Owner == ActiveUsr.
+    getDocOwnerByID1(Docs,Owner,Car),
+    Owner = ActiveUsr.
 
 checkAllId([_|Cdr],ActiveUsr,Docs):-
     checkAllId(Cdr,ActiveUsr,Docs).
+
+
+%Domains
+%ActiveUsr: list
+%Docs: Docs
+%Predicates
+%countCheckId(Ids,ActiveUsr,Docs)
+%Goals
+%Verificar los id con respecto al usuario activo.
+%clauses
+%Regla  
 
 
 countCheckId(Ids,ActiveUsr,Docs):-
@@ -1111,15 +1252,42 @@ countCheckId(Ids,ActiveUsr,Docs):-
     length(Ids,IdsLength),
     BoolListLength = IdsLength.
 
+%Domains
+%ListIDs: list
+%ShareList: list
+%ToDelete: share
+%Predicates
+%deleteShare(ListIDs,ShareList,ToDelete)
+%Goals
+%Buscar los elementos a borrar del shareList junto con revokeAccess
+%clauses
+%Regla  
+
+deleteShare([],_,_):- fail,!.
 
 deleteShare([Car|_],ShareList,ToDelete):-
+    integer(Car),
     revokeAccess(ShareList,Car,ToDelete).
 
-deleteShare([_|Cdr],ShareList,NewShare):-
-    deleteShare(Cdr,ShareList,NewShare).    
+deleteShare([_|Cdr],ShareList,ToDelete):-
+    Cdr\=[],
+    deleteShare(Cdr,ShareList,ToDelete).    
 
 
+%Domains
+%ListIDs: list
+%ShareList: list
+%ToDelete: share
+%Predicates
+%revokeAccess(ListIDs,ShareList,ToDelete)
+%Goals
+%Complemento deleteShare
+%clauses
+%Regla  
+
+revokeAccess([],_,_):-!.
 revokeAccess([Car|_],Id,ToDelete):-
+    isShare(Car),
     getShareID(Car,ShareID),
     Id=ShareID,
     ToDelete = Car.
@@ -1127,21 +1295,66 @@ revokeAccess([Car|_],Id,ToDelete):-
 revokeAccess([_|Cdr],Id,ToDelete):-
     revokeAccess(Cdr,Id,ToDelete).
 
+%Domains
+%Sn1: ParadigmaDocs
+%ListIDs: list
+%Predicates
+%revokeWithName(Sn1,ListIDs)
+%Goals
+%Buscar los ids de los documentos del usr activo
+%clauses
+%Regla  
 
 revokeWithName(Sn1,ListIDs):-
     getPlatformDocs(Sn1,Docs),
     getPlatformActiveUsr(Sn1,ActiveUsr), 
     findall(IDS,getDocOwnerByID(Docs,ActiveUsr,IDS),ListIDs).
 
+
+
+
+%Domains
+%Sn1: ParadigmaDocs
+%ListIDs: list
+%FinalShareList: list
+%Predicates
+%revokeWithIds(Sn1,ListIDs)
+%Goals
+%Eliminar los usuarios compartidos a partir de una lista de ids
+%clauses
+%Regla  
+
+cleanList([],_):- fail,!.
+cleanList([Car|_],NewList):-
+    Car\=[],
+    NewList = Car.
+cleanList([_|Cdr],NewList):-
+    cleanList(Cdr,NewList).
+
+
+
 revokeWithIds(Sn1,ListIDs,FinalShareList):-
     getPlatformShare(Sn1,ShareList),
     findall(ToDelete,deleteShare(ListIDs,ShareList,ToDelete),UsrsToDelete),
-    subtract(ShareList,UsrsToDelete,FinalShareList).
+    findall(NewList,cleanList(UsrsToDelete,NewList),FinalUsrsToDelete),
+    subtract(ShareList,FinalUsrsToDelete,FinalShareList).
 
+
+%Domains
+%Sn1: ParadigmaDocs
+%DocumentIds: list
+%Sn2: ParadigmaDocs
+%Predicates
+%paradigmaDocsRevokeAllAccesses( Sn1, DocumentIds, Sn2)
+%Goals
+%Eliminar los usuarios compartidos, dependiendo si existe o no una lista de ids.
+%clauses
+%Regla  
 
 paradigmaDocsRevokeAllAccesses( Sn1, DocumentIds, Sn2):-
     not(notLogin(Sn1)),
     getPlatformActiveUsr(Sn1,ActiveUsr),
+    getPlatformDocs(Sn1,Docs),
     countCheckId(DocumentIds,ActiveUsr,Docs),
     DocumentIds = [] ->
     (revokeWithName(Sn1,AllIds),
@@ -1152,7 +1365,8 @@ paradigmaDocsRevokeAllAccesses( Sn1, DocumentIds, Sn2):-
     getPlatformDocsVer(Sn1,DocsVersions),
     getPlatformDocs(Sn1,Docs),
     Sn2 = [PlatformName, DatePlatform, PaUsers,Docs,[],FinalShareList,DocsVersions]);
-    (revokeWithIds(Sn1,DocumentIds,FinalShareList),
+    ( 
+    revokeWithIds(Sn1,DocumentIds,FinalShareList),
     getPlatformUsers(Sn1, PaUsers),
     getPlatformName(Sn1, PlatformName),
     getPlatformDate(Sn1, DatePlatform),
@@ -1164,10 +1378,21 @@ paradigmaDocsRevokeAllAccesses( Sn1, DocumentIds, Sn2):-
 
 
 
-
 %------------------------------------------------------------------------------------------------
 %-------------------------------------paradigmaDocsSearch-----------------------------
-%getShareIDsUser(ShareList,Usr,AllIds)
+
+
+%Domains
+%ShareList: list
+%Usr: string
+%Docs: list
+%newDoc: doc
+%Predicates
+%getShareDocsUser(ShareList,Usr,NewDoc)
+%Goals
+%Obtiene un doc que se le compartio a un usr.
+%clauses
+%Regla  
 
 
 getShareDocsUser([],_,_,_):- !.
@@ -1182,14 +1407,50 @@ getShareDocsUser([Car|_],Usr,Docs,NewDoc):-
 getShareDocsUser([_|Cdr],Usr,Docs,NewDoc):-
     getShareDocsUser(Cdr,Usr,Docs,NewDoc).
 
+
+
+%Domains
+%ShareList: list
+%Usr: string
+%Docs: list
+%newDoc: doc
+%Predicates
+%allShareWithMe(ShareList,Usr,Docs,DocsList)
+%Goals
+%Encapsula getShareDocsUser, obtiene la lista de docs.
+%clauses
+%Regla  
+
 allShareWithMe(ShareList,Usr,Docs,DocsList):-
     findall(NewDoc,getShareDocsUser(ShareList,Usr,Docs,NewDoc),DocsList).
+
+
+%Domains
+%string: string
+%palabra: string
+%Predicates
+%isInString(String,Palabra)
+%Goals
+%Verificar si el texto ingresado se encuentra en un string.
+%clauses
+%Regla  
 
 isInString(String,Palabra):-
     sub_string(String, _, Length, _, Palabra),
     Length > 0,!.
 
+%Domains
+%Docs: list
+%Str: string
+%DocOut: doc
+%Predicates
 %getDocIfEqualStr(Docs,Str,DocOut)
+%Goals
+%Verifica si en una lista de docs existe una palabra.
+%clauses
+%Regla  
+
+
 getDocIfEqualStr([],_,_):- !.
 
 getDocIfEqualStr([Car|_],Text,DocOut):-
@@ -1199,6 +1460,20 @@ getDocIfEqualStr([Car|_],Text,DocOut):-
 
 getDocIfEqualStr([_|Cdr],Text,DocOut):-
     getDocIfEqualStr(Cdr,Text,DocOut).
+
+
+
+%Domains
+%Sn1: ParadigmaDocs
+%SearchText: string
+%Documents: list
+%Predicates
+%paradigmaDocsSearch(Sn1, SearchText, Documents):
+%Goals
+%Obtener los documentos con coincidencia con el texto ingresado
+%buscando en versiones tanto actuales como pasadas, y los docs compartidos.
+%clauses
+%Regla  
 
 
 paradigmaDocsSearch(Sn1, SearchText, Documents):-
@@ -1221,90 +1496,79 @@ paradigmaDocsSearch(Sn1, SearchText, Documents):-
 
 /*
 
-
-fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
-paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
-paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
-paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsShare(Sn5,1,["W","R","C"],["manolo"],Snfinal),
-paradigmaDocsLogin(Snfinal,"driques","1234",Sn6),paradigmaDocsAdd(Sn6,1,FechaNueva," CONTENIDO AGREGADO 1",Sn7),paradigmaDocsLogin(Sn7,"driques","1234",Sn8),
-paradigmaDocsSearch(Sn8,"soy", Sn9).
-
-
-
-allShareWithMe([[1, "manolo", ["W", "R", "C"]], [1, "pablo", ["W", "R", "C"]], [2, "pablo", ["W", "R", "C"]], _],"pablo",[[2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]], [1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"]]],Docs).
-["GdocsCopy", [1, 2, 2021], [["juan", "1234", [1, 2, 2021]], ["pablo", "1234", [1, 2, 2021]], ["manolo", "1234", [1, 2, 2021]], ["driques", "1234", [1, 2, 2021]]], [[2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]], [1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"]]], ["manolo"], [[1, "manolo", ["W", "R", "C"]], [1, "pablo", ["W", "R", "C"]], [1, "juan", ["W", "R", "C"]], _], []],)
-
-
-    /*
-[[2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]], [1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"]]].
-ऀAAA = [[1, "manolo", ["W", "R", "C"]], [1, "pablo", ["W", "R", "C"]], [2, "juan", ["W", "R", "C"]], _].
-["GdocsCopy", [1, 2, 2021], [["juan", "1234", [1, 2, 2021]], ["pablo", "1234", [1, 2, 2021]], ["manolo", "1234", [1, 2, 2021]], ["driques", "1234", [1, 2, 2021]]], [[2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]], [1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"]]], ["manolo"], [[1, "manolo", ["W", "R", "C"]], [1, "pablo", ["W", "R", "C"]], [1, "juan", ["W", "R", "C"]], _], []]
-
-
-getPlatformShare(["GdocsCopy", [1, 2, 2021], [["juan", "1234", [1, 2, 2021]], ["pablo", "1234", [1, 2, 2021]], ["manolo", "1234", [1, 2, 2021]], ["driques", "1234", [1, 2, 2021]]], [[2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]], [1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"]]], ["manolo"], [[1, "manolo", ["W", "R", "C"]], [1, "pablo", ["W", "R", "C"]], [1, "juan", ["W", "R", "C"]], _], []]
-|    ,Share).
-
-    ["GdocsCopy", [1, 2, 2021], [["manolo", "1234", [1, 2, 2021]], ["driques", "1234", [1, 2, 2021]]], [[1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"]], [2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]]], ["manolo"], [[1, "manolo", ["W", "R", "C"]],,[3, "manolo", ["W","C"]],[5, "das", ["W", "R", "C"]],[2, "manolo", ["C"]],_A], [[1, 2, [1, 2, 2021], "NuevoDoc 1", "soy un doc CONTENIDO AGREGADO 1", ["driques"]]]]
-    (revokeWithName(Sn1,AllIds),
-    revokeWithIds(Sn1,AllIds,FinalShareList),
-    getPlatformUsers(Sn1, PaUsers),
-    getPlatformName(Sn1, PlatformName),
-    getPlatformDate(Sn1, DatePlatform),
-    getPlatformDocsVer(Sn1,DocsVersions),
-    Sn2 = [PlatformName, DatePlatform, PaUsers,Docs,[],FinalShareList,DocsVersions] ,!. );
-    (revokeWithIds(Sn1,DocumentIds,FinalShareList),
-    getPlatformUsers(Sn1, PaUsers),
-    getPlatformName(Sn1, PlatformName),
-    getPlatformDate(Sn1, DatePlatform),
-    getPlatformDocsVer(Sn1,DocsVersions),
-    Sn2 = [PlatformName, DatePlatform, PaUsers,Docs,[],FinalShareList,DocsVersions] ,!. ). */
-
-
-testIf(Number,Re):-
-    Number > 2 ->
-    Re = "esto",
-    Re = "Is".
-
-%myDeleteElemList(Dato, list, Resultado).
-
-*/
-
-/*
-[[1, 2, [1, 2, 2021], "NuevoDoc 1", "soy un doc CONTENIDO AGREGADO 1", ["driques"]], [2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["driques"]]]
-                        
-[[1, "manolo", ["W", "R", "C"]],[3, "manolo", ["W","C"]],[5, "das", ["W", "R", "C"]],[2, "manolo", ["C"]],_A]
-getShareID
-getShareUsr
-getSharePermissionList
-
 EJEMPLOS
+--------------------------------------------------Creación de Platformas-------------------------------------------------------------------------------------
+-> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout).
+-> fecha(3,2,2021,FechaNueva),paradigmaDocs("WordCopy",FechaNueva,Pout).
+-> fecha(1,4,2021,FechaNueva),paradigmaDocs("paradigmaOffice",FechaNueva,Pout).
 
 
---------------------------------------------------Registro de "driques"-------------------------------------------------------------------------------------
+--------------------------------------------------Registros -------------------------------------------------------------------------------------
 -> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister).
-----------------------------------------------Login de "driques", se logea con exito-----------------------------------------------------------------------------
+
+Registro con error ya que, ya se registro "driques"
+-> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister),
+paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister).
+
+-> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister),  
+paradigmaDocsRegister(PoutRegister,FechaNueva,"juan","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"pepe","1234",PoutRegister2).
+
+----------------------------------------------Login-----------------------------------------------------------------------------
 -> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister),paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2).
--------------------------------------------------------Login errado------------------------------------------------------------------------------------------------
+
+Login errado
 -> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister),
 paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsLogin(Sn2,"driques","1234",Sn3).
+
+
+-> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister),
+paradigmaDocsLogin(PoutRegister,"ThuPrincEXita","1234",Sn2),paradigmaDocsLogin(Sn2,"ThuPrincEXita","1234",Sn3).
+
 ---------------------------------------------------Crea nuevo Doc----------------------------------------------------------------------------------------
 -> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),
 paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),
 paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),
 paradigmaDocsLogin(DocOut,"manolo","1234",Login2),paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut).
---------------------------------------------------Comparte doc 1 Errado porque ni pepito ni juan existen----------------------------------------------------------------------------------------
+
+-> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),
+paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),paradigmaDocsLogin(PoutRegister,"manolo","1234",Login2),
+paradigmaDocsCreate(Login2,FechaNueva,"Lorem ipsum","soy otro doc",FinalDocOut).
+
+
+Se crea otro documento para ver si el nuevo predicado que toma el id max suma al nuevo id del doc.
+
 -> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
 paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
 paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
-paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsShare(Sn5,1,["W","R","C"],["Pepito","Juan"],Snfinal).
---------------------------------------------------Comparte doc 1 Bueno----------------------------------------------------------------------------------------
+paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsShare(Sn5,1,["W","R","C"],["manolo"],Snfinal),
+paradigmaDocsLogin(Snfinal,"driques","1234",Sn6),paradigmaDocsAdd(Sn6,1,FechaNueva," CONTENIDO AGREGADO 1",Sn7),paradigmaDocsLogin(Sn7,"manolo","1234",Sn8),
+paradigmaDocsCreate(Sn8,FechaNueva,"UltimoDoc Test","soy el ultimo doc",Sn9).
+
+
+
+--------------------------------------------------Share----------------------------------------------------------------------------------------
+Comparte doc 1 Errado porque ni pepito ni juan existen
+-> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
+paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
+paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
+paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),
+paradigmaDocsShare(Sn5,1,["W","R","C"],["Pepito","Juan"],Snfinal).
+
+Comparte doc 1 Bueno
 -> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
 paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
 paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
 paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsRegister(Sn5,FechaNueva,"pablo","1234",Sn6),
 paradigmaDocsRegister(Sn6,FechaNueva,"juan","1234",Sn7),paradigmaDocsShare(Sn7,1,["W","R","C"],["manolo","pablo","juan"],Snfinal).
 
-------------------------------------------------Add testing-------------------------------------------------------------------------------------------------------
+Fecha Incorrecta
+-> fecha(12,24,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
+paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
+paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
+paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsRegister(Sn5,FechaNueva,"pablo","1234",Sn6),
+paradigmaDocsRegister(Sn6,FechaNueva,"juan","1234",Sn7),paradigmaDocsShare(Sn7,1,["W"],["manolo","pablo","juan"],Snfinal).
+
+------------------------------------------------Add-------------------------------------------------------------------------------------------------------
 Correcto porque "driques" es owner del doc 1.
 -> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
 paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
@@ -1329,67 +1593,141 @@ paradigmaDocsLogin(Snfinal,"driques","1234",Sn6),paradigmaDocsAdd(Sn6,2,_,_,Sn7)
 
 
 
-
-%-----------------------------------------------Creacion de nuevo doc ---------------------------------------------------
-%Se crea otro documento para ver si el nuevo predicado que toma el id max suma al nuevo id del doc.
-
-fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
-paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
-paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
-paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsShare(Sn5,1,["W","R","C"],["manolo"],Snfinal),
-paradigmaDocsLogin(Snfinal,"driques","1234",Sn6),paradigmaDocsAdd(Sn6,1,FechaNueva," CONTENIDO AGREGADO 1",Sn7),paradigmaDocsLogin(Sn7,"manolo","1234",Sn8),
-paradigmaDocsCreate(Sn8,FechaNueva,"UltimoDoc Test","soy el ultimo doc",Sn9).
-
-
-
-
-
-
-
 %------------------------------------RestoreVersion--------------------------------------------------------------------------------------
 
 
-fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
+-> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
 paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
 paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
 paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsShare(Sn5,1,["W","R","C"],["manolo"],Snfinal),
 paradigmaDocsLogin(Snfinal,"driques","1234",Sn6),paradigmaDocsAdd(Sn6,1,FechaNueva," CONTENIDO AGREGADO 1",Sn7),paradigmaDocsLogin(Sn7,"driques","1234",Sn8),
 paradigmaDocsRestoreVersion(Sn8, 1, 1, Sn9).
 
+-> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
+paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
+paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
+paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsShare(Sn5,1,["W","R","C"],["manolo"],Snfinal),
+paradigmaDocsLogin(Snfinal,"manolo","1234",Sn6),paradigmaDocsAdd(Sn6,2,FechaNueva," CONTENIDO AGREGADO al segundo doc",Sn7),paradigmaDocsLogin(Sn7,"manolo","1234",Sn8),
+paradigmaDocsRestoreVersion(Sn8, 2, 1, Sn9).
+
+%Incorrecto, "driques" no es owner del doc 2.
+->fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
+paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
+paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
+paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsShare(Sn5,1,["W","R","C"],["manolo"],Snfinal),
+paradigmaDocsLogin(Snfinal,"manolo","1234",Sn6),paradigmaDocsAdd(Sn6,2,FechaNueva," CONTENIDO AGREGADO al segundo doc",Sn7),paradigmaDocsLogin(Sn7,"driques","1234",Sn8),
+paradigmaDocsRestoreVersion(Sn8, 2, 1, Sn9).
+
+
+
+%------------------------------------paradigmaDocsToStr--------------------------------------------------------------------------------------
+
+
+-> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
+paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
+paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
+paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsShare(Sn5,1,["W","R","C"],["manolo"],Snfinal),
+paradigmaDocsLogin(Snfinal,"driques","1234",Sn6),paradigmaDocsAdd(Sn6,1,FechaNueva," CONTENIDO AGREGADO 1",Sn7),paradigmaDocsLogin(Sn7,"driques","1234",Sn8),
+paradigmaDocsRestoreVersion(Sn8, 1, 1, Sn9),paradigmaDocsToString(Sn9,StrOut).
+
+-> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
+paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
+paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
+paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsShare(Sn5,1,["W","R","C"],["manolo"],Snfinal),
+paradigmaDocsLogin(Snfinal,"manolo","1234",Sn6),paradigmaDocsAdd(Sn6,2,FechaNueva," CONTENIDO AGREGADO al segundo doc",Sn7),paradigmaDocsLogin(Sn7,"manolo","1234",Sn8),
+paradigmaDocsRestoreVersion(Sn8, 2, 1, Sn9),paradigmaDocsLogin(Sn9,"manolo","1234",Sn10),paradigmaDocsToString(Sn10,StrOut).
+
+%Incorrecto, "driques" no es owner del doc 2 y la fecha es Incorrecta.
+->fecha(132,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
+paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
+paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
+paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsShare(Sn5,1,["W","R","C"],["manolo"],Snfinal),
+paradigmaDocsLogin(Snfinal,"manolo","1234",Sn6),paradigmaDocsAdd(Sn6,2,FechaNueva," CONTENIDO AGREGADO al segundo doc",Sn7),paradigmaDocsLogin(Sn7,"driques","1234",Sn8),
+paradigmaDocsRestoreVersion(Sn8, 2, 1, Sn9),paradigmaDocsToString(Sn9,StrOut)..
+
 
 
 
 %------------------------------------RevokeAllAccesses--------------------------------------------
-fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
+-> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
+paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
+paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
+paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),
+paradigmaDocsShare(Sn5,1,["W","R","C"],["manolo"],Snfinal),
+paradigmaDocsLogin(Snfinal,"driques","1234",Sn6),paradigmaDocsAdd(Sn6,1,FechaNueva," CONTENIDO AGREGADO 1",Sn7),paradigmaDocsLogin(Sn7,"driques","1234",Sn8),
+paradigmaDocsRevokeAllAccesses(Sn8,[],SnRevoke).
+
+Solo elimina de la lista de compartidos el doc 3
+
+->fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
+paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
+paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
+paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Login3),
+paradigmaDocsCreate(Login3,FechaNueva,"Lorem ipsum","soy un doc",FinalDocOut2),
+paradigmaDocsLogin(FinalDocOut2,"driques","1234",Sn5),
+paradigmaDocsShare(Sn5,3,["C"],["manolo"],Sn6),
+paradigmaDocsLogin(Sn6,"driques","1234",Sn7),
+paradigmaDocsShare(Sn7,1,["W","R","C"],["manolo"],Snfinal),
+paradigmaDocsLogin(Snfinal,"driques","1234",Sn8),paradigmaDocsAdd(Sn8,1,FechaNueva," CONTENIDO AGREGADO 1",Sn9),paradigmaDocsLogin(Sn9,"driques","1234",Sn10),
+paradigmaDocsRevokeAllAccesses(Sn10,[3],SnRevoke).
+
+
+Error, no hay sesión iniciada
+
+->fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
+paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
+paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
+paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Login3),
+paradigmaDocsCreate(Login3,FechaNueva,"Lorem ipsum","soy un doc",FinalDocOut2),
+paradigmaDocsLogin(FinalDocOut2,"driques","1234",Sn5),
+paradigmaDocsShare(Sn5,3,["C"],["manolo"],Sn6),
+paradigmaDocsLogin(Sn6,"driques","1234",Sn7),
+paradigmaDocsShare(Sn7,1,["W","R","C"],["manolo"],Snfinal),
+paradigmaDocsLogin(Snfinal,"driques","1234",Sn8),paradigmaDocsAdd(Sn8,1,FechaNueva," CONTENIDO AGREGADO 1",Sn9),
+paradigmaDocsRevokeAllAccesses(Sn10,[3],SnRevoke).
+
+-----------------------------------paradigmaDocsSearch-----------------------------------------------------
+-> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
 paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
 paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
 paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsShare(Sn5,1,["W","R","C"],["manolo"],Snfinal),
-paradigmaDocsLogin(Snfinal,"driques","1234",Sn6),paradigmaDocsAdd(Sn6,1,FechaNueva," CONTENIDO AGREGADO 1",Sn7),paradigmaDocsLogin(Sn7,"driques","1234",Sn8),paradigmaDocsRevokeAllAccesses(Sn8,[],SnRevoke).
+paradigmaDocsLogin(Snfinal,"driques","1234",Sn6),paradigmaDocsAdd(Sn6,1,FechaNueva," CONTENIDO AGREGADO 1",Sn7),paradigmaDocsLogin(Sn7,"driques","1234",Sn8),
+paradigmaDocsSearch(Sn8,"soy", Sn9).
 
+Error no hay sesión iniciada.
 
-paradigmaDocsRevokeAllAccesses(["GdocsCopy", [1, 2, 2021], [["manolo", "1234", [1, 2, 2021]], ["driques", "1234", [1, 2, 2021]]], [[1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"]], [2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["driques"]]], ["driques"], [[1, "manolo", ["W", "R", "C"]],[3, "manolo", ["W","C"]],[5, "das", ["W", "R", "C"]],[2, "manolo", ["C"]],_A], [[1, 2, [1, 2, 2021], "NuevoDoc 1", "soy un doc CONTENIDO AGREGADO 1", ["driques"]]]],[1,2],ShareReturn).
+-> fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
+paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
+paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
+paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsShare(Sn5,1,["W","R","C"],["manolo"],Snfinal),
+paradigmaDocsLogin(Snfinal,"driques","1234",Sn6),paradigmaDocsAdd(Sn6,1,FechaNueva," CONTENIDO AGREGADO 1",Sn7),
+paradigmaDocsSearch(Sn8,"soy", Sn9).
 
-paradigmaDocsSearch(Sn1, SearchText, ShareDocsMe)
+Error no encuentra el string
+->fecha(1,2,2021,FechaNueva),paradigmaDocs("GdocsCopy",FechaNueva,Pout),
+paradigmaDocsRegister(Pout,FechaNueva,"driques","1234",PoutRegister1),paradigmaDocsRegister(PoutRegister1,FechaNueva,"manolo","1234",PoutRegister),
+paradigmaDocsLogin(PoutRegister,"driques","1234",Sn2),paradigmaDocsCreate(Sn2,FechaNueva,"NuevoDoc 1","soy un doc",DocOut),paradigmaDocsLogin(DocOut,"manolo","1234",Login2),
+paradigmaDocsCreate(Login2,FechaNueva,"NuevoDoc 2","soy otro doc",FinalDocOut),paradigmaDocsLogin(FinalDocOut,"driques","1234",Sn5),paradigmaDocsShare(Sn5,1,["W","R","C"],["manolo"],Snfinal),
+paradigmaDocsLogin(Snfinal,"driques","1234",Sn6),paradigmaDocsAdd(Sn6,1,FechaNueva," CONTENIDO AGREGADO 1",Sn7),paradigmaDocsLogin(Sn7,"driques","1234",Sn8),
+paradigmaDocsSearch(Sn8,"Profe tenga piedad", Sn9).
+
 */
 
 
 
-%[1, 2, [1, 2, 2021], "NuevoDoc 1", "soy un doc CONTENIDO AGREGADO 1", ["driques"], [2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]]].
 
-% [[2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]], [1, 1, [1, 2, 2021], "NuevoDoc 1", "soy un doc", ["driques"]]].
-%[[1, 2, [1, 2, 2021], "NuevoDoc 1", "soy un doc CONTENIDO AGREGADO 1", ["driques"]], [2, 1, [1, 2, 2021], "NuevoDoc 2", "soy otro doc", ["manolo"]]].
-%------------------------------Predicados y recordatorios personales--------------------------------------
 
 /*
+
+%------------------------------Predicados y recordatorios personales--------------------------------------
+
+
     set_prolog_flag(answer_write_options,
                        [ quoted(true),
                          portray(true),
                          spacing(next_argument)
                        ]).
 
-
-
-Predicado Add listo, solo falta devolverse a versiones anteriores, imprimir por pantalla, y dar todos los ejemplos.
 
 
 
